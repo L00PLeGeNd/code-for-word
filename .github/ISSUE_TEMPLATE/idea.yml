@@ -1,0 +1,36 @@
+name: Idea · 想法
+description: Feature request or UX idea (code paste first, please).
+title: "[idea] "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Code paste (RTF / Word / WPS)
+        - Caption / frame / underlines
+        - Text / paper mode
+        - Docs / i18n / promo
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you solving?
+      placeholder: WPS clips long caption rows when underlines are on…
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would “good” look like?
+      placeholder: Caption stays fully visible; maybe a WPS tip in the UI…
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Willing to help?
+      options:
+        - label: I can test a build on Word / WPS
+        - label: I might open a PR

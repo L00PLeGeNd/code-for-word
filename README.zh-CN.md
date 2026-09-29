@@ -3,10 +3,20 @@
 [English](./README.md) | **中文**
 
 <p align="center">
+  <a href="https://github.com/L00PLeGeNd/code-for-word/stargazers"><img src="https://img.shields.io/github/stars/L00PLeGeNd/code-for-word?style=flat&color=0B6E99" alt="GitHub stars" /></a>
+  <a href="https://github.com/L00PLeGeNd/code-for-word/releases/latest"><img src="https://img.shields.io/github/v/release/L00PLeGeNd/code-for-word?style=flat&color=2E7D32" alt="Latest release" /></a>
+  <a href="https://l00plegend.github.io/code-for-word/"><img src="https://img.shields.io/badge/网页版-在线试用-007ACC?style=flat" alt="网页版" /></a>
+  <a href="https://gitee.com/loopisme/code-for-word"><img src="https://img.shields.io/badge/Gitee-镜像-C71D23?style=flat" alt="Gitee" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-5A6573?style=flat" alt="MIT" /></a>
+</p>
+
+<p align="center">
   <img src="docs/demo.gif" alt="码文演示" width="100%" />
 </p>
 
 **把高亮代码贴进 Word**——颜色、外框、页边距和可选的说明栏按设置保留。这是主功能。需要写论文或公文时，再切到可选的**文本模式**；打开后默认停在代码模式。
+
+要是帮你少熬了一个通宵，来 [★ Star 一下](https://github.com/L00PLeGeNd/code-for-word)，再转给还在「截图贴 Word」的同学。
 
 ## 怎么用
 
@@ -52,6 +62,19 @@
 - 可清理 OCR 全角字符和多余空格，以及一部分 LaTeX 标记
 
 翻译默认关闭。打开后可选免费引擎或你自己的接口；文字会发到对应服务，不会在未打开时送出。
+
+## 社区
+
+用的人反馈，项目才会变好。
+
+| 想做什么 | 去哪 |
+|---|---|
+| 提问、晒用法、求模板 | [Discussions](https://github.com/L00PLeGeNd/code-for-word/discussions) |
+| 报 Word / WPS 粘贴问题 | [Issues](https://github.com/L00PLeGeNd/code-for-word/issues/new/choose) |
+| 提 PR / 小改动 | [Pull requests](https://github.com/L00PLeGeNd/code-for-word/pulls) · 见 [CONTRIBUTING](./CONTRIBUTING.md) |
+| 转发安利 | 复制 [docs/share.md](./docs/share.md) 里的文案 |
+
+国内镜像：[Gitee](https://gitee.com/loopisme/code-for-word)。有条件优先在 GitHub Discussions 聊，方便汇总。
 
 ## 开发
 

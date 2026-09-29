@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Discussions · 提问 / 晒用法
+    url: https://github.com/L00PLeGeNd/code-for-word/discussions
+    about: Questions, tips, and screenshots — not necessarily a bug.
+  - name: Gitee mirror · 国内镜像
+    url: https://gitee.com/loopisme/code-for-word
+    about: China mirror for source and Releases. Prefer GitHub Discussions when you can.

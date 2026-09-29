@@ -1,0 +1,52 @@
+name: Paste bug · 粘贴问题
+description: Word / WPS paste or DOCX looks wrong (frame, margins, caption, colors).
+title: "[paste] "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: target
+    attributes:
+      label: Where did it break?
+      options:
+        - Microsoft Word (desktop paste)
+        - WPS (desktop paste)
+        - Download DOCX
+        - Browser copy/paste
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: App / Word / WPS versions
+      description: e.g. Code for Word 0.3.0 · Word 2021 · WPS 2023
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options:
+        - Code (default)
+        - Text / paper
+        - Auto
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options that matter
+      description: Frame, underlines, caption rows, margins, line numbers, font size…
+      placeholder: box frame, caption on (2 rows), underlines off, side margin 2.5cm…
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps + what you expected
+      placeholder: Paste sample → Copy to Word → Ctrl+V with Keep Source Formatting → caption row clipped in WPS…
+    validations:
+      required: true
+  - type: textarea
+    id: extras
+    attributes:
+      label: Screenshots / sample (optional)
+      description: Redact secrets. A 5-line sample is enough.

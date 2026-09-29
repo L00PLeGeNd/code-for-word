@@ -3,10 +3,20 @@
 **English** | [中文](./README.zh-CN.md)
 
 <p align="center">
+  <a href="https://github.com/L00PLeGeNd/code-for-word/stargazers"><img src="https://img.shields.io/github/stars/L00PLeGeNd/code-for-word?style=flat&color=0B6E99" alt="GitHub stars" /></a>
+  <a href="https://github.com/L00PLeGeNd/code-for-word/releases/latest"><img src="https://img.shields.io/github/v/release/L00PLeGeNd/code-for-word?style=flat&color=2E7D32" alt="Latest release" /></a>
+  <a href="https://l00plegend.github.io/code-for-word/"><img src="https://img.shields.io/badge/web-try%20online-007ACC?style=flat" alt="Try online" /></a>
+  <a href="https://gitee.com/loopisme/code-for-word"><img src="https://img.shields.io/badge/Gitee-mirror-C71D23?style=flat" alt="Gitee mirror" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-5A6573?style=flat" alt="MIT" /></a>
+</p>
+
+<p align="center">
   <img src="docs/demo.gif" alt="Code for Word demo" width="100%" />
 </p>
 
 **Paste highlighted code into Word** — colors, frame, margins, and optional caption rows stay put. That is the main job. An optional **text mode** can set prose like a thesis; the app always opens in code mode.
+
+If this saves you a thesis night, [★ Star the repo](https://github.com/L00PLeGeNd/code-for-word) and tell a classmate who still screenshots code into Word.
 
 ## Use it
 
@@ -53,6 +63,19 @@ Choose **Text** when you want prose set like a thesis — not required for pasti
 
 Translation stays off. When you enable it, text is sent only to the free engine or the endpoint you configure.
 
+## Community
+
+This project grows when people paste, break things, and report back.
+
+| Do this | Where |
+|---|---|
+| Ask a question / share a tip | [Discussions](https://github.com/L00PLeGeNd/code-for-word/discussions) |
+| Report Word / WPS paste bugs | [Issues](https://github.com/L00PLeGeNd/code-for-word/issues/new/choose) |
+| Send a fix or small polish | [Pull requests](https://github.com/L00PLeGeNd/code-for-word/pulls) — see [CONTRIBUTING](./CONTRIBUTING.md) |
+| Share with classmates | Copy a blurb from [docs/share.md](./docs/share.md) |
+
+China mirror issues/PRs: [Gitee](https://gitee.com/loopisme/code-for-word). Prefer GitHub Discussions when you can — one thread, less drift.
+
 ## Develop
 
 ```bash
@@ -60,7 +83,7 @@ git clone https://github.com/L00PLeGeNd/code-for-word.git
 cd code-for-word
 npm install
 npm run dev   # Vite + Electron shell
-npm test      # 173 tests (vitest)
+npm test      # vitest
 npm run dist:win
 ```
 
