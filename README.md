@@ -6,7 +6,7 @@
   <img src="docs/demo.gif" alt="Code for Word demo" width="100%" />
 </p>
 
-Paste highlighted code into Word, with the frame and spacing you set. Switch to text mode when you want prose set like a thesis: Songti body, Heiti headings. The app opens in code mode.
+**Paste highlighted code into Word** — colors, frame, margins, and optional caption rows stay put. That is the main job. An optional **text mode** can set prose like a thesis; the app always opens in code mode.
 
 ## Use it
 
@@ -17,7 +17,7 @@ Paste highlighted code into Word, with the frame and spacing you set. Switch to 
 Source mirror: [Gitee · loopisme/code-for-word](https://gitee.com/loopisme/code-for-word) (synced with GitHub; one web URL only, so it cannot drift)
 
 - Paste → adjust options → **Download DOCX** (recommended on the web)
-- **Copy to Word** works in the browser too, but Word paste quality varies; desktop app is better for that
+- **Copy to Word** works in the browser too, but paste quality varies; desktop app is better for that
 
 ### 2) Windows app (best paste quality)
 
@@ -31,17 +31,19 @@ If Windows SmartScreen says the publisher is unknown, choose **More info → Run
 
 Closing the window hides the app to the system tray.
 
-## Two modes
+**Word vs WPS:** Desktop paste targets Microsoft Word first. WPS usually works; if a caption row looks clipped, try **Download DOCX** or turn off underlines and paste again.
 
-The app opens in **Code**. Text mode and translation stay off until you turn them on.
+## Modes
 
-### Code mode
+Opens in **Code**. Text mode and translation stay off until you turn them on.
 
-Syntax highlighting, type size, line numbers, page margins, code inset, frame, and optional underlines. The desktop app copies RTF so Word keeps the colors and the frame.
+### Code mode (default)
 
-### Text / paper mode
+Syntax highlighting, type size, line numbers, page margins, code inset, frame, optional underlines, and in-box caption rows. The desktop app copies RTF so Word keeps the colors and the frame.
 
-Choose **Text** to set prose like a thesis:
+### Text / paper mode (optional)
+
+Choose **Text** when you want prose set like a thesis — not required for pasting code:
 
 - Body defaults to 宋体 12 pt, Times New Roman for Latin, 1.5 line spacing, 2-character first-line indent, justified
 - Headings use 黑体: 16 pt, 14 pt, then 12 pt

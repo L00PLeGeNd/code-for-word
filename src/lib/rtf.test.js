@@ -318,6 +318,9 @@ describe('RTF exporter', () => {
     expect(rtf).toMatch(/\\red192\\green0\\blue0/) // caption color
     expect(rtf).toMatch(/\\f1\\fs\d+\\cf\d+\\b\\i/)
     expect(rtf).toContain('\\i ')
+    // WPS-safe caption metrics: explicit line spacing + border padding
+    expect(rtf).toMatch(/\\sa40\\sb40\\sl\d+\\slmult0/)
+    expect(rtf).toMatch(/\\brdrb\\brdrs\\brdrw20\\brdrcf\d+\\brsp40/)
     expect((rtf.match(/\\brdrb\\brdrs\\brdrw20\\brdrcf\d+/g) || []).length).toBeGreaterThanOrEqual(2)
     // caption paras before code; line number "1." appears only in code (f0), after captions
     const firstCap = rtf.indexOf('\\f1\\fs')

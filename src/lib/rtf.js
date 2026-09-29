@@ -110,8 +110,10 @@ function resolveFont(fontName) {
  * @param {boolean} isFirst
  */
 function captionBorders(frame, ac, isFirst) {
-  const s = `\\brdrs\\brdrw40\\brdrcf${ac}`
-  const under = `\\brdrb\\brdrs\\brdrw20\\brdrcf${ac}`
+  // \\brsp keeps text off the stroke. WPS often clips 说明栏 glyphs when
+  // borders sit flush on Songti/Heiti with no line spacing or padding.
+  const s = `\\brdrs\\brdrw40\\brdrcf${ac}\\brsp60`
+  const under = `\\brdrb\\brdrs\\brdrw20\\brdrcf${ac}\\brsp40`
   if (frame === 'box') {
     const top = isFirst ? `\\brdrt${s}` : ''
     return `${top}\\brdrl${s}\\brdrr${s}${under}`
@@ -305,13 +307,16 @@ export function linesToRtf(lines, options) {
     return content
   }
 
+  // Caption needs its own \\sl: default single spacing + paragraph borders
+  // crops descenders / CJK in WPS even when Word looks fine.
+  const capLinePart = `\\sl${Math.max(276, Math.round(capFs * 14))}\\slmult0 `
   let captionPart = ''
   if (capLines.length && !options.rowRules) {
     captionPart = capLines.map((text, i) => {
       const borders = captionBorders(frame, ac, i === 0)
       return (
         `\\pard\\plain\\ql\\hyphpar0\\nowidctlpar` +
-        `\\li${left}\\ri${right}\\sa0\\sb0 ` +
+        `\\li${left}\\ri${right}\\sa40\\sb40${capLinePart}` +
         `\\f1\\fs${capFs}\\cf${capCf}${capB}${capI}${capShade}${borders} ` +
         `${escapeRtf(text)}\\par\n`
       )
@@ -349,7 +354,7 @@ export function linesToRtf(lines, options) {
       if (!noFill) def += `\\clcbpat${item.caption ? capBg : bg}`
       def += `\\cellx${cellRight}`
       const head = item.caption
-        ? `\\pard\\intbl\\plain\\ql\\f1\\fs${capFs}\\cf${capCf}${capB}${capI}${capShade} `
+        ? `\\pard\\intbl\\plain\\ql${capLinePart}\\f1\\fs${capFs}\\cf${capCf}${capB}${capI}${capShade} `
         : `\\pard\\intbl\\plain\\ql${linePart}\\f0\\fs${fontSizeHalfPoints}${shade}\\cf${fg} `
       return `${def}\n${head}${item.inner}\\cell\\row`
     }).join('\n')
