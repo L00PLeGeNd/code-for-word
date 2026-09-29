@@ -1,39 +1,47 @@
-# Share kit · 传播文案
+# Share kit
 
-Copy-paste friendly blurbs. Prefer linking the **web app** for try-now, and **Gitee Releases** for classmates in China.
+English-first blurbs for GitHub, Discord, Reddit, X, and lab chats.  
+Chinese variants are at the bottom for WeChat / QQ / Gitee audiences.
 
-## One-liners
+**Default links:** web app for try-now · GitHub Releases for install · star the repo.
 
-**EN:** Code for Word — paste highlighted code into Microsoft Word with the frame and spacing you set. https://l00plegend.github.io/code-for-word/
+## One-liner
 
-**ZH:** 码文：把高亮代码一键贴进 Word，颜色和外框还在。网页免安装 → https://l00plegend.github.io/code-for-word/ · 国内安装包 → https://gitee.com/loopisme/code-for-word/releases
+Code for Word — paste highlighted code into Microsoft Word with the frame and spacing you set.  
+https://l00plegend.github.io/code-for-word/
 
-## Short post (thesis / lab)
+## Short post
 
-还在把代码截图塞进毕业论文？试试开源小工具 **码文 Code for Word**：
+Still screenshotting code into Word? Try **Code for Word** (open source):
 
-- 网页版免安装：https://l00plegend.github.io/code-for-word/
-- Windows 安装包（国内）：https://gitee.com/loopisme/code-for-word/releases
-- 源码 / Issues：https://github.com/L00PLeGeNd/code-for-word
-
-粘贴后在 Word / WPS 选「保留源格式」。好用给个 Star，翻车来 Issues / Discussions 说一声。
-
-## English short post
-
-Stop screenshotting code into Word. **Code for Word** keeps syntax colors, margins, and an optional frame:
-
-- Try in browser: https://l00plegend.github.io/code-for-word/
+- Web (no install): https://l00plegend.github.io/code-for-word/
 - Windows installer: https://github.com/L00PLeGeNd/code-for-word/releases/latest
-- Star / discuss: https://github.com/L00PLeGeNd/code-for-word
+- Source / Discussions: https://github.com/L00PLeGeNd/code-for-word
 
-## What to ask the community
+After paste, choose **Keep Source Formatting** in Word. If it helps, ★ Star the repo — and drop a note if something breaks (Word vs WPS welcome).
 
-When you share, invite one concrete reply — response rate goes up:
+## Longer post (thesis / docs night)
 
-- “Word 还是 WPS？贴完边框掉了吗？”
-- “说明栏在你那边会不会被裁切？”
-- “最想要的下一个小功能是什么？（先说代码粘贴相关的）”
+**Code for Word** keeps syntax colors, page margins, an optional frame, and caption rows when you paste into Word. Optional thesis/text mode exists, but the app opens in **code mode** by default.
+
+- Try it: https://l00plegend.github.io/code-for-word/
+- v0.3.0 installer: https://github.com/L00PLeGeNd/code-for-word/releases/latest
+- Talk to us: https://github.com/L00PLeGeNd/code-for-word/discussions/7
+
+## Ask for one reply (boosts engagement)
+
+- “Word or WPS — does the frame survive paste?”
+- “Do caption rows get clipped on your build?”
+- “What’s the smallest next feature you’d want for *code* paste?”
 
 ## Hashtags (optional)
 
-`#码文` `#CodeForWord` `#毕业论文` `#MicrosoftWord` `#WPS` `#开源`
+`#CodeForWord` `#MicrosoftWord` `#OpenSource` `#Thesis` `#DevTools`
+
+---
+
+## 中文（国内群 / Gitee）
+
+**一句话：** 码文：把高亮代码一键贴进 Word，颜色和外框还在。网页 → https://l00plegend.github.io/code-for-word/ · 安装包 → https://gitee.com/loopisme/code-for-word/releases
+
+**短帖：** 还在截图贴论文？试试 **码文 Code for Word** — 网页免安装 / Gitee 下安装包；贴完选「保留源格式」。好用 Star，翻车来 Discussions。

@@ -65,16 +65,16 @@ Translation stays off. When you enable it, text is sent only to the free engine 
 
 ## Community
 
-This project grows when people paste, break things, and report back.
+This project grows when people paste, break things, and report back. Promo copy is **English-first** (GitHub audience); Chinese blurbs live at the bottom of the share kit for domestic groups.
 
 | Do this | Where |
 |---|---|
-| Ask a question / share a tip | [Discussions](https://github.com/L00PLeGeNd/code-for-word/discussions) |
+| Ask a question / share a tip | [Discussions](https://github.com/L00PLeGeNd/code-for-word/discussions/7) |
 | Report Word / WPS paste bugs | [Issues](https://github.com/L00PLeGeNd/code-for-word/issues/new/choose) |
 | Send a fix or small polish | [Pull requests](https://github.com/L00PLeGeNd/code-for-word/pulls) — see [CONTRIBUTING](./CONTRIBUTING.md) |
-| Share with classmates | Copy a blurb from [docs/share.md](./docs/share.md) |
+| Share the project | Copy an English blurb from [docs/share.md](./docs/share.md) |
 
-China mirror issues/PRs: [Gitee](https://gitee.com/loopisme/code-for-word). Prefer GitHub Discussions when you can — one thread, less drift.
+China mirror: [Gitee](https://gitee.com/loopisme/code-for-word). Prefer GitHub Discussions when you can — one thread, less drift.
 
 ## Develop
 

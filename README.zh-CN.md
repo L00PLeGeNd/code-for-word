@@ -69,12 +69,12 @@
 
 | 想做什么 | 去哪 |
 |---|---|
-| 提问、晒用法、求模板 | [Discussions](https://github.com/L00PLeGeNd/code-for-word/discussions) |
+| 提问、晒用法、求模板 | [Discussions](https://github.com/L00PLeGeNd/code-for-word/discussions/7) |
 | 报 Word / WPS 粘贴问题 | [Issues](https://github.com/L00PLeGeNd/code-for-word/issues/new/choose) |
 | 提 PR / 小改动 | [Pull requests](https://github.com/L00PLeGeNd/code-for-word/pulls) · 见 [CONTRIBUTING](./CONTRIBUTING.md) |
-| 转发安利 | 复制 [docs/share.md](./docs/share.md) 里的文案 |
+| 转发安利 | [docs/share.md](./docs/share.md)（GitHub 用英文主文案；文末有中文短帖） |
 
-国内镜像：[Gitee](https://gitee.com/loopisme/code-for-word)。有条件优先在 GitHub Discussions 聊，方便汇总。
+国内镜像：[Gitee](https://gitee.com/loopisme/code-for-word)。对外宣传默认用英文；国内群再用文末中文。有条件优先在 GitHub Discussions 聊。
 
 ## 开发
 

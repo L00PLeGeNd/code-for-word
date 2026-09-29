@@ -34,4 +34,4 @@ Thanks for helping **Code for Word / 码文**. The product promise is simple: **
 - Bugs: [Issues](https://github.com/L00PLeGeNd/code-for-word/issues/new/choose)
 - China mirror: [Gitee](https://gitee.com/loopisme/code-for-word)
 
-Share blurbs: [docs/share.md](./docs/share.md)
+Share blurbs (English-first): [docs/share.md](./docs/share.md)
