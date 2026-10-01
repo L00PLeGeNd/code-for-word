@@ -31,6 +31,36 @@ import {
   resolveCaptionItalic
 } from './caption.js'
 
+/**
+ * docx TextRun colors must be 6-digit hex (no #). Accept #rgb / #rrggbb / rgb(...).
+ * @param {string | null | undefined} raw
+ * @param {string} [fallback]
+ */
+export function toDocxHexColor(raw, fallback = '000000') {
+  const fb = String(fallback).replace('#', '').trim() || '000000'
+  const s = String(raw ?? '').trim()
+  if (!s) return fb.length === 6 ? fb.toUpperCase() : '000000'
+  const hex = s.replace(/^#/, '')
+  if (/^[0-9a-fA-F]{6}$/.test(hex)) return hex.toUpperCase()
+  if (/^[0-9a-fA-F]{3}$/.test(hex)) {
+    return `${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`.toUpperCase()
+  }
+  const rgb = s.match(/^rgba?\(\s*([\d.]+)\s*[, ]\s*([\d.]+)\s*[, ]\s*([\d.]+)/i)
+    || s.match(/^rgb\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)/i)
+  if (rgb) {
+    const toByte = (v) => {
+      const n = Number(v)
+      if (!Number.isFinite(n)) return 0
+      return Math.max(0, Math.min(255, Math.round(n <= 1 && String(v).includes('.') ? n * 255 : n)))
+    }
+    const r = toByte(rgb[1]).toString(16).padStart(2, '0')
+    const g = toByte(rgb[2]).toString(16).padStart(2, '0')
+    const b = toByte(rgb[3]).toString(16).padStart(2, '0')
+    return `${r}${g}${b}`.toUpperCase()
+  }
+  return fb.length === 6 ? fb.toUpperCase() : '000000'
+}
+
 const NIL_BORDER = { style: BorderStyle.NONE, size: 0, color: 'auto', space: 0 }
 
 /** DOCX page sizes (twips). Web download can set real page setup; RTF paste cannot. */
@@ -188,12 +218,12 @@ export async function linesToDocxBlob(lines, options) {
   const fontName = options.fontName || 'Consolas'
   const pt = options.fontSizePt || 9
   const fontSize = Math.round(pt * 2)
-  const lnColor = (options.lineNumberColor || '#7A7A7A').replace('#', '')
-  const fg = options.foreground.replace('#', '')
+  const lnColor = toDocxHexColor(options.lineNumberColor || '#7A7A7A')
+  const fg = toDocxHexColor(options.foreground, '000000')
   const noFill = !!options.noFill || options.background === 'none'
-  const fill = noFill ? 'auto' : (options.background || '#F5F5F5').replace('#', '')
+  const fill = noFill ? 'auto' : toDocxHexColor(options.background || '#F5F5F5', 'F5F5F5')
   const suffix = options.lineNumberSuffix ?? '.'
-  const accentHex = (options.accentLeft || '#007ACC').replace('#', '')
+  const accentHex = toDocxHexColor(options.accentLeft || '#007ACC', '007ACC')
   const frame = resolveFrameStyle(options.frameStyle)
   const pageSetup = resolveDocxPageSetup(options)
   const codeInset = pageSetup.codeInset || 0
@@ -207,8 +237,8 @@ export async function linesToDocxBlob(lines, options) {
   const showCap = shouldShowCaption(options)
   const capLines = showCap ? captionDisplayLines(options) : []
   const capFont = resolveCaptionFont(options)
-  const capFill = resolveCaptionBackground(options).replace('#', '')
-  const capColor = resolveCaptionColor(options).replace('#', '')
+  const capFill = toDocxHexColor(resolveCaptionBackground(options), 'D9D9D9')
+  const capColor = toDocxHexColor(resolveCaptionColor(options), '000000')
   const capBold = resolveCaptionBold(options)
   const capItalic = resolveCaptionItalic(options)
   const capSize = Math.max(20, fontSize + 2)
@@ -235,7 +265,7 @@ export async function linesToDocxBlob(lines, options) {
           text: run.text,
           font: fontName,
           size: fontSize,
-          color: (run.color || options.foreground).replace('#', ''),
+          color: toDocxHexColor(run.color || options.foreground, fg),
           bold: !!run.bold,
           italics: !!run.italic,
           noProof: true

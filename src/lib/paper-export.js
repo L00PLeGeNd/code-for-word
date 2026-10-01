@@ -6,6 +6,7 @@
 
 import { escapeRtf, buildColorTable } from './rtf.js'
 import { escapeHtml, linesToWordHtml } from './word-html.js'
+import { findSourceLineForSnippet, sourceLineBaseForCode } from './preview-nav.js'
 import { resolveFrameStyle, rtfParaBorders } from './frame.js'
 import { tableBorders, resolveDocxPageSetup } from './docx.js'
 import { FONT_OPTIONS } from '../themes.js'
@@ -271,6 +272,7 @@ function tableHtml(p, preview) {
  * @param {PaperPara[]} paras
  * @param {{
  *  preview?: boolean,
+ *  sourceText?: string,
  *  codeBackground?: string,
  *  codeNoFill?: boolean,
  *  accentLeft?: string,
@@ -282,6 +284,7 @@ function tableHtml(p, preview) {
  */
 export function paperToWordHtml(paras, options = {}) {
   const preview = !!options.preview
+  const sourceText = typeof options.sourceText === 'string' ? options.sourceText : ''
   const codeGroups = groupCodeParas(paras)
   const groupById = new Map(codeGroups.map((g) => [g.groupId, g]))
   const seenGroups = new Set()
@@ -289,7 +292,7 @@ export function paperToWordHtml(paras, options = {}) {
   /** @type {string[]} */
   const parts = []
 
-  const codeOptionsFor = (p) => ({
+  const codeOptionsFor = (p, codePlain) => ({
     background: options.codeNoFill ? 'none' : (options.codeBackground || DEFAULT_CODE_BG),
     noFill: !!options.codeNoFill,
     foreground: '#000000',
@@ -302,7 +305,8 @@ export function paperToWordHtml(paras, options = {}) {
     frameStyle: options.frameStyle || 'bar',
     sideMarginTwips: options.sideMarginTwips ?? null,
     pageContentTwips: null,
-    preview
+    preview,
+    sourceLineBase: preview && sourceText ? sourceLineBaseForCode(sourceText, codePlain) : 0
   })
 
   for (const p of paras) {
@@ -322,19 +326,20 @@ export function paperToWordHtml(paras, options = {}) {
         bold: !!r.bold,
         italic: !!r.italic
       })))
-      parts.push(linesToWordHtml(codeLines, codeOptionsFor(p)))
+      const codePlain = group.lines.map((runs) => runs.map((r) => r.text).join('')).join('\n')
+      parts.push(linesToWordHtml(codeLines, codeOptionsFor(p, codePlain)))
       continue
     }
     if (p.kind === 'codeCaption') continue
-    parts.push(textParaHtml(p, preview))
+    parts.push(textParaHtml(p, preview, sourceText))
   }
 
   const wrapClass = preview ? 'paper-doc preview-page' : 'paper-doc'
   return `<div class="${wrapClass}" style="display:block;">${parts.join('\n')}</div>`
 }
 
-/** @param {PaperPara} p @param {boolean} preview */
-function textParaHtml(p, preview) {
+/** @param {PaperPara} p @param {boolean} preview @param {string} [sourceText] */
+function textParaHtml(p, preview, sourceText = '') {
   const align = p.align === 'center' ? 'center' : p.align === 'justify' ? 'justify' : p.align === 'right' ? 'right' : 'left'
   const indent = p.firstLineTwips !== 0 ? `text-indent:${(p.firstLineTwips / 20).toFixed(1)}pt;` : ''
   const padLeft = p.leftIndentTwips > 0 ? `padding-left:${(p.leftIndentTwips / 20).toFixed(1)}pt;` : ''
@@ -352,8 +357,11 @@ function textParaHtml(p, preview) {
     return `<span style="${color}${weight}${italic}${decoration}${font}">${escapeHtml(r.text)}</span>`
   }).join('')
   const msoRule = preview ? '' : 'mso-line-height-rule:"multiple";'
+  const plain = p.runs.map((r) => r.text).join('')
+  const srcLine = preview && sourceText ? findSourceLineForSnippet(sourceText, plain) : 0
+  const srcAttr = srcLine > 0 ? ` data-src-line="${srcLine}"` : ''
   return (
-    `<p class="paper-p paper-${p.kind}" style="` +
+    `<p class="paper-p paper-${p.kind}"${srcAttr} style="` +
     `margin:0;${before}${after}${padLeft}${indent}text-align:${align};` +
     `font-family:${cssFontStack(p.fontName)};font-size:${p.fontSizePt}pt;${lh}${msoRule}` +
     `">${runs}</p>`

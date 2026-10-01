@@ -105,6 +105,7 @@ function runToSpan(run, fallback) {
  *  codeInsetTwips?: number | null,
  *  noFill?: boolean,
  *  preview?: boolean,
+ *  sourceLineBase?: number,
  *  captionEnabled?: boolean,
  *  caption?: string,
  *  captionLines?: string[],
@@ -214,7 +215,7 @@ function buildPreviewHtml({
         : ''
       const pad = options.rowRules ? 'padding:0 14pt 0 4pt;' : 'padding:0;'
       return (
-        `<div class="listing-line" style="display:block;margin:0;${pad}` +
+        `<div class="listing-line" data-src-line="${(options.sourceLineBase || 0) + i + 1}" style="display:block;margin:0;${pad}` +
         `${rule}white-space:pre;font-family:${fontStack};font-size:${fontSizePt}pt;` +
         `line-height:1.35;text-align:left;">${line}</div>`
       )

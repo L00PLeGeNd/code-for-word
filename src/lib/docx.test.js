@@ -122,7 +122,7 @@ describe('DOCX exporter', () => {
   it('emits hard paragraph breaks (no soft w:br) for multi-line code', async () => {
     const blob = await linesToDocxBlob(
       [
-        [{ text: 'a', color: '#000000' }],
+        [{ text: 'a', color: 'rgb(0 0 0 / 0.95)' }],
         [{ text: 'b', color: '#000000' }],
         [{ text: 'c', color: '#000000' }]
       ],

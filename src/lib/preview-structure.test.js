@@ -34,6 +34,8 @@ describe('sample preview structure', () => {
     const lineBlocks = (html.match(/class="listing-line"/g) || []).length
     expect(lineBlocks).toBe(lines.length)
     expect(html).not.toContain('<pre')
+    expect(html).toContain('data-src-line="1"')
+    expect(html).toContain(`data-src-line="${lines.length}"`)
   })
 
   it('normalizes CR-only line endings before highlight', () => {

@@ -40,6 +40,12 @@ import {
 } from './lib/caption.js'
 import { resolveFrameStyle } from './lib/frame.js'
 import {
+  canOpenPreviewLightbox,
+  snapshotPreviewHtml,
+  decorateLightboxHtml
+} from './lib/preview-lightbox.js'
+import { srcLineFromTarget, focusSourceLine } from './lib/preview-nav.js'
+import {
   LOCALES,
   detectLocale,
   setLocale,
@@ -52,7 +58,6 @@ import { linesToWordHtml } from './lib/word-html.js'
 import { linesToRtf } from './lib/rtf.js'
 import { linesToDocxBlob } from './lib/docx.js'
 import { writeClipboard, downloadBlob, clipboardHostReady } from './lib/clipboard.js'
-import { detectMode } from './lib/detect.js'
 import { parseBlocks, renumberBlocks, resolveSchemeId } from './lib/blocks.js'
 import { buildPaperModel, paperParasToPlainText } from './lib/paper-format.js'
 import { paperToRtf, paperToWordHtml, paperToDocxBlob } from './lib/paper-export.js'
@@ -141,7 +146,7 @@ def train(model, data):
 
 1.2 研究意义
 
-实验表明该方法在多个数据集上均有效。
+实验表明该方法在多个数据集上均有效，并且效率极高。
 
 2 相关工作
 
@@ -229,6 +234,13 @@ const els = {
   rowRules: document.getElementById('rowRules'),
   source: document.getElementById('source'),
   preview: document.getElementById('preview'),
+  previewExpand: document.getElementById('previewExpand'),
+  previewLightbox: document.getElementById('previewLightbox'),
+  previewLightboxBody: document.getElementById('previewLightboxBody'),
+  previewLightboxClose: document.getElementById('previewLightboxClose'),
+  jumpConfirm: document.getElementById('jumpConfirm'),
+  jumpConfirmTitle: document.getElementById('jumpConfirmTitle'),
+  jumpConfirmBody: document.getElementById('jumpConfirmBody'),
   metaSource: document.getElementById('metaSource'),
   metaPreview: document.getElementById('metaPreview'),
   status: document.getElementById('status'),
@@ -254,7 +266,6 @@ const els = {
   captionAddRow: document.getElementById('captionAddRow'),
   captionRemoveRow: document.getElementById('captionRemoveRow'),
   modeSwitch: document.getElementById('modeSwitch'),
-  detectChip: document.getElementById('detectChip'),
   codeToolbar: document.getElementById('codeToolbar'),
   textToolbar: document.getElementById('textToolbar'),
   translateRow: document.getElementById('translateRow'),
@@ -301,10 +312,8 @@ let exportBusy = false
 let latest = null
 let selectsReady = false
 
-/** @type {'auto' | 'code' | 'text'} */
+/** @type {'code' | 'text'} */
 let mode = 'code'
-/** @type {'code' | 'text' | 'mixed'} */
-let textDetect = 'text'
 /** @type {Map<number, string> | null} 按原始块索引存放译文 */
 let translations = null
 /** @type {{ source: string, provider: string, direction: string, splitMode: string } | null} 译文有效性标记 */
@@ -333,8 +342,15 @@ function applyStaticI18n() {
   })
   document.querySelectorAll('[data-i18n-aria]').forEach((node) => {
     const key = node.getAttribute('data-i18n-aria')
-    if (key) node.setAttribute('aria-label', t(key))
+    if (key) {
+      const label = t(key)
+      node.setAttribute('aria-label', label)
+      if (node.hasAttribute('title') || node.matches('.preview-expand, .preview-lightbox-close')) {
+        node.title = label
+      }
+    }
   })
+  syncPreviewExpandEnabled()
 }
 
 function collectPrefs() {
@@ -431,7 +447,7 @@ function applyPrefs(p) {
     els.textIndentChars.value = '0'
   }
   if (els.autoTranslate) els.autoTranslate.checked = p.autoTranslate === true
-  if (p.mode) mode = p.mode === 'code' || p.mode === 'text' || p.mode === 'auto' ? p.mode : 'code'
+  if (p.mode) mode = p.mode === 'text' ? 'text' : 'code'
   if (els.forceBold) els.forceBold.checked = !!p.forceBold
   if (els.forceItalic) els.forceItalic.checked = !!p.forceItalic
   if (els.lineNumbers) els.lineNumbers.checked = p.lineNumbers !== false
@@ -787,17 +803,13 @@ function countStats(code) {
   return { lines, chars: [...normalized].length }
 }
 
-/** 自动模式：识别为代码走代码管线，否则（文本/混合）走论文管线；空内容时保持代码外观（默认体验） */
+/** 当前工作模式：仅代码 / 文本，由用户显式切换 */
 function effectiveMode() {
-  if (mode === 'auto') {
-    if (!els.source?.value.trim()) return 'code'
-    return textDetect === 'code' ? 'code' : 'text'
-  }
-  return mode
+  return mode === 'text' ? 'text' : 'code'
 }
 
 function setMode(next, options = {}) {
-  const target = next === 'code' || next === 'text' ? next : 'auto'
+  const target = next === 'text' ? 'text' : 'code'
   if (target !== mode) {
     translations = null
     translationsMeta = null
@@ -819,7 +831,6 @@ let syncedEff = null
 function syncModeUI() {
   const eff = effectiveMode()
   if (eff === syncedEff) {
-    syncDetectChip()
     syncTranslateButton()
     return
   }
@@ -832,20 +843,7 @@ function syncModeUI() {
   else if (eff === 'code') syncCaptionRow()
   if (els.sourceLabel) els.sourceLabel.textContent = t(eff === 'text' ? 'sourceText' : 'source')
   if (els.source) els.source.placeholder = t(eff === 'text' ? 'placeholderText' : 'placeholder')
-  syncDetectChip()
   syncTranslateButton()
-}
-
-function syncDetectChip() {
-  if (!els.detectChip) return
-  if (mode !== 'auto' || !els.source.value.trim()) {
-    els.detectChip.hidden = true
-    return
-  }
-  const key = textDetect === 'code' ? 'detectCode' : textDetect === 'mixed' ? 'detectMixed' : 'detectText'
-  els.detectChip.hidden = false
-  els.detectChip.textContent = t(key)
-  els.detectChip.dataset.kind = textDetect
 }
 
 function syncTranslateButton() {
@@ -934,20 +932,6 @@ function buildPaperFromSource() {
 
 function renderPreview() {
   const code = els.source.value
-  if (code.trim()) {
-    // 自动识别硬护栏：存在任何代码票/围栏/hljs 高置信语言即按代码处理，
-    // 贴代码永远不会被自动改成正文；只有零代码票的纯散文才进入文本管线
-    textDetect = detectMode(code, {
-      autoDetect: (src) => {
-        try {
-          const r = hljs.highlightAuto(src)
-          return { language: r.language, relevance: r.relevance }
-        } catch {
-          return null
-        }
-      }
-    })
-  }
   const eff = effectiveMode()
   const { lines, chars } = countStats(code)
   els.metaSource.textContent = code ? t('metaCount', { lines, chars }) : t(eff === 'text' ? 'sourceText' : 'source')
@@ -961,6 +945,8 @@ function renderPreview() {
     wrap.innerHTML = `<div class="preview-empty">${t('previewEmpty')}</div>`
     els.metaPreview.textContent = t('preview')
     syncModeUI()
+    syncPreviewExpandEnabled()
+    closePreviewLightbox()
     return
   }
 
@@ -978,6 +964,8 @@ function renderPreview() {
       captionPlaceholder: t('captionPlaceholder')
     })}</div>`
     syncModeUI()
+    syncPreviewExpandEnabled()
+    refreshLightboxIfOpen()
     return
   }
 
@@ -995,10 +983,131 @@ function renderPreview() {
   wrap.style.background = ''
   wrap.innerHTML = `<div class="preview-sheet preview-paper">${paperToWordHtml(built.paras, {
     ...paperExportOptions(),
-    preview: true
+    preview: true,
+    sourceText: code
   })}</div>`
   syncModeUI()
+  syncPreviewExpandEnabled()
+  refreshLightboxIfOpen()
   scheduleAutoTranslate()
+}
+
+function isPreviewLightboxOpen() {
+  const dlg = els.previewLightbox
+  return !!(dlg && (dlg.open || dlg.hasAttribute('open')))
+}
+
+function syncPreviewExpandEnabled() {
+  const btn = els.previewExpand
+  if (!btn) return
+  const ok = canOpenPreviewLightbox(els.preview)
+  btn.disabled = !ok
+  btn.setAttribute('aria-disabled', ok ? 'false' : 'true')
+}
+
+function fillLightboxBody() {
+  if (!els.previewLightboxBody) return
+  const html = decorateLightboxHtml(snapshotPreviewHtml(els.preview))
+  els.previewLightboxBody.innerHTML = html || `<div class="preview-empty">${t('previewEmpty')}</div>`
+  const mode = els.preview?.dataset.mode || 'light'
+  els.previewLightboxBody.dataset.mode = mode
+}
+
+function openPreviewLightbox() {
+  if (!canOpenPreviewLightbox(els.preview) || !els.previewLightbox) return
+  fillLightboxBody()
+  if (typeof els.previewLightbox.showModal === 'function') {
+    if (!els.previewLightbox.open) els.previewLightbox.showModal()
+  } else {
+    els.previewLightbox.setAttribute('open', '')
+  }
+  els.previewExpand?.setAttribute('aria-expanded', 'true')
+  queueMicrotask(() => els.previewLightboxClose?.focus())
+}
+
+function closePreviewLightbox() {
+  const dlg = els.previewLightbox
+  if (!dlg) return
+  if (typeof dlg.close === 'function' && dlg.open) dlg.close()
+  else dlg.removeAttribute('open')
+  els.previewExpand?.setAttribute('aria-expanded', 'false')
+}
+
+function refreshLightboxIfOpen() {
+  if (!isPreviewLightboxOpen()) return
+  if (!canOpenPreviewLightbox(els.preview)) {
+    closePreviewLightbox()
+    return
+  }
+  fillLightboxBody()
+}
+
+/** @type {number} */
+let pendingJumpLine = 0
+
+/**
+ * @param {number} line
+ */
+function askJumpToSource(line) {
+  if (!line || !els.source?.value) return
+  pendingJumpLine = line
+  if (els.jumpConfirmTitle) {
+    els.jumpConfirmTitle.textContent = t('jumpConfirmTitle', { n: line })
+  }
+  if (els.jumpConfirmBody) {
+    els.jumpConfirmBody.textContent = t('jumpConfirmBody')
+  }
+  const dlg = els.jumpConfirm
+  if (!dlg) {
+    if (window.confirm(t('jumpConfirmTitle', { n: line }))) {
+      focusSourceLine(els.source, line)
+      closePreviewLightbox()
+    }
+    return
+  }
+  dlg.dataset.jumpLine = String(line)
+  dlg.returnValue = ''
+  if (typeof dlg.showModal === 'function') {
+    if (!dlg.open) dlg.showModal()
+  } else {
+    dlg.setAttribute('open', '')
+  }
+}
+
+/**
+ * @param {Event} e
+ */
+function onPreviewPointer(e) {
+  const root = /** @type {Element | null} */ (e.currentTarget)
+  if (!root) return
+  if (e.type === 'mouseover') {
+    const lineEl = /** @type {Element | null} */ (
+      e.target instanceof Element ? e.target.closest('[data-src-line]') : null
+    )
+    root.querySelectorAll('.is-src-hover').forEach((n) => {
+      if (n !== lineEl) n.classList.remove('is-src-hover')
+    })
+    lineEl?.classList.add('is-src-hover')
+    return
+  }
+  if (e.type === 'mouseleave') {
+    root.querySelectorAll('.is-src-hover').forEach((n) => n.classList.remove('is-src-hover'))
+    return
+  }
+  if (e.type === 'dblclick') {
+    const line = srcLineFromTarget(e.target)
+    if (!line) return
+    e.preventDefault()
+    askJumpToSource(line)
+  }
+}
+
+function bindPreviewNav(root) {
+  if (!root || root.dataset.navBound === '1') return
+  root.dataset.navBound = '1'
+  root.addEventListener('mouseover', onPreviewPointer)
+  root.addEventListener('mouseleave', onPreviewPointer)
+  root.addEventListener('dblclick', onPreviewPointer)
 }
 
 function scheduleRender() {
@@ -1330,11 +1439,36 @@ els.btnCopy.addEventListener('click', copyToWord)
 els.btnDownload?.addEventListener('click', downloadDocx)
 els.brandHome?.addEventListener('click', openGitHubHome)
 els.btnGitHub?.addEventListener('click', openGitHubHome)
+els.previewExpand?.addEventListener('click', () => openPreviewLightbox())
+els.previewLightboxClose?.addEventListener('click', () => closePreviewLightbox())
+els.previewLightbox?.addEventListener('cancel', (e) => {
+  e.preventDefault()
+  closePreviewLightbox()
+})
+els.previewLightbox?.addEventListener('click', (e) => {
+  if (e.target === els.previewLightbox) closePreviewLightbox()
+})
+els.jumpConfirm?.addEventListener('close', () => {
+  const dlg = els.jumpConfirm
+  const ok = dlg?.returnValue === 'ok'
+  const line = Number(dlg?.dataset.jumpLine || pendingJumpLine || 0)
+  pendingJumpLine = 0
+  if (dlg) delete dlg.dataset.jumpLine
+  if (!ok || !line) return
+  // Wait a tick so the dialog releases focus before selecting in the textarea.
+  requestAnimationFrame(() => {
+    focusSourceLine(els.source, line)
+    closePreviewLightbox()
+  })
+})
+bindPreviewNav(els.preview)
+bindPreviewNav(els.previewLightboxBody)
+syncPreviewExpandEnabled()
 
 // 模式切换（自动 / 代码 / 文本）
 els.modeSwitch?.querySelectorAll('.mode-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
-    setMode(btn.getAttribute('data-mode') || 'auto')
+    setMode(btn.getAttribute('data-mode') || 'code')
   })
 })
 

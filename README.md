@@ -45,7 +45,7 @@ Closing the window hides the app to the system tray.
 
 ## Modes
 
-Opens in **Code**. Text mode and translation stay off until you turn them on.
+Opens in **Code**. Switch to **Text** when you need thesis-style prose. There is no auto-detect mode (too easy to misclassify).
 
 ### Code mode (default)
 
