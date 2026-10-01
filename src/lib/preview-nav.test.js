@@ -3,6 +3,8 @@ import {
   sourceLineRanges,
   srcLineFromTarget,
   focusSourceLine,
+  flashSourceLine,
+  flashSourceRange,
   findSourceLineForSnippet
 } from './preview-nav.js'
 
@@ -63,5 +65,25 @@ describe('preview-nav', () => {
     const src = 'alpha\nbeta gamma\ndelta'
     expect(findSourceLineForSnippet(src, 'beta gamma')).toBe(2)
     expect(findSourceLineForSnippet(src, 'nope')).toBe(0)
+  })
+
+  it('flashes the textarea class after focusing a line', () => {
+    const classes = new Set()
+    const ta = {
+      value: 'one\ntwo\nthree',
+      clientHeight: 200,
+      classList: {
+        add(c) { classes.add(c) },
+        remove(c) { classes.delete(c) }
+      },
+      offsetWidth: 1,
+      focus() {},
+      setSelectionRange() {},
+      set scrollTop(_v) {},
+      get scrollTop() { return 0 }
+    }
+    expect(flashSourceLine(/** @type {any} */ (ta), 2, { durationMs: 50 })).toBe(true)
+    expect(classes.has('is-src-flash')).toBe(true)
+    expect(flashSourceRange(/** @type {any} */ (ta), { start: 0, end: 3, line: 1 })).toBe(true)
   })
 })

@@ -594,6 +594,71 @@ html.demo-capture .preview-sheet {
   pointer-events: none;
 }
 
+.source-head-tools {
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.source-find {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: min(100%, 280px);
+  padding: 2px 4px 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 252, 248, 0.92);
+  border: 1px solid rgba(20, 24, 31, 0.1);
+}
+
+.source-find-input {
+  width: 9.5rem;
+  min-width: 0;
+  flex: 1 1 auto;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.source-find-input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.source-find-meta {
+  flex: 0 0 auto;
+  min-width: 2.6rem;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.source-find-btn {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.source-find-btn:hover {
+  background: rgba(20, 24, 31, 0.06);
+}
+
+.source-find-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 textarea {
   flex: 1 1 auto;
   width: 100%;
@@ -611,6 +676,30 @@ textarea {
   color: var(--ink);
 }
 textarea:focus { background: #fff; }
+
+textarea::selection {
+  background: rgba(11, 110, 153, 0.35);
+  color: var(--ink);
+}
+
+textarea.is-src-flash {
+  animation: src-line-flash 1.25s var(--ease);
+}
+
+@keyframes src-line-flash {
+  0% {
+    background: #fff8d6;
+    box-shadow: inset 0 0 0 2px rgba(11, 110, 153, 0.55);
+  }
+  35% {
+    background: #fff3b0;
+    box-shadow: inset 0 0 0 2px rgba(11, 110, 153, 0.4);
+  }
+  100% {
+    background: #fff;
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+}
 
 .preview-stage {
   flex: 1 1 auto;
@@ -1118,6 +1207,7 @@ textarea:focus { background: #fff; }
   .preview-expand, .preview-lightbox-close { transition: none; }
   .preview-sheet [data-src-line],
   .preview-lightbox-scroll [data-src-line] { transition: none; }
+  textarea.is-src-flash { animation: none; background: #fff3b0; }
 }
 
 /* —— Mode switch（代码 / 文本）—— */

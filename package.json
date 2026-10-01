@@ -1,6 +1,6 @@
 {
   "name": "codepaste",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": false,
   "description": "Code for Word / 码文 — paste highlighted code into Word, or set prose as a thesis. Opens in code mode.",
   "type": "module",

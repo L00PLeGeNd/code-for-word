@@ -59,6 +59,32 @@ export function srcLineFromTarget(target) {
 }
 
 /**
+ * Select and scroll a textarea to a character range (and optional 1-based line for scroll).
+ * @param {HTMLTextAreaElement | null | undefined} textarea
+ * @param {number} start
+ * @param {number} end
+ * @param {number} [lineNumber]
+ * @returns {boolean}
+ */
+export function focusSourceRange(textarea, start, end, lineNumber) {
+  if (!textarea || !Number.isFinite(start) || !Number.isFinite(end)) return false
+  const a = Math.max(0, Math.min(start, end))
+  const b = Math.max(a, Math.max(start, end))
+  textarea.focus()
+  textarea.setSelectionRange(a, b === a ? a : b)
+  let line = lineNumber
+  if (!line || line < 1) {
+    line = String(textarea.value || '').slice(0, a).split(/\r\n|\r|\n/).length
+  }
+  const style = typeof window !== 'undefined' ? window.getComputedStyle(textarea) : null
+  const lineHeight = style ? (parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.65 || 22) : 22
+  const paddingTop = style ? (parseFloat(style.paddingTop) || 0) : 0
+  const targetTop = paddingTop + (line - 1) * lineHeight - textarea.clientHeight * 0.28
+  textarea.scrollTop = Math.max(0, targetTop)
+  return true
+}
+
+/**
  * Select and scroll a textarea to a 1-based line.
  * @param {HTMLTextAreaElement | null | undefined} textarea
  * @param {number} lineNumber
@@ -72,13 +98,53 @@ export function focusSourceLine(textarea, lineNumber, ranges) {
   if (!row) return false
   const start = row.start
   const end = Math.max(row.end, start)
-  textarea.focus()
-  textarea.setSelectionRange(start, end === start ? start : end)
-  const style = typeof window !== 'undefined' ? window.getComputedStyle(textarea) : null
-  const lineHeight = style ? (parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.65 || 22) : 22
-  const paddingTop = style ? (parseFloat(style.paddingTop) || 0) : 0
-  const targetTop = paddingTop + (lineNumber - 1) * lineHeight - textarea.clientHeight * 0.28
-  textarea.scrollTop = Math.max(0, targetTop)
+  return focusSourceRange(textarea, start, end === start ? start : end, lineNumber)
+}
+
+/**
+ * Focus a line and briefly flash the editor so the jump is obvious.
+ * @param {HTMLTextAreaElement | null | undefined} textarea
+ * @param {number} lineNumber
+ * @param {{ durationMs?: number, className?: string, ranges?: { start: number, end: number, text: string }[] }} [opts]
+ * @returns {boolean}
+ */
+export function flashSourceLine(textarea, lineNumber, opts = {}) {
+  if (!focusSourceLine(textarea, lineNumber, opts.ranges)) return false
+  const className = opts.className || 'is-src-flash'
+  const durationMs = Number.isFinite(opts.durationMs) ? opts.durationMs : 1400
+  textarea.classList.remove(className)
+  // Restart CSS animation if the class was already present.
+  void textarea.offsetWidth
+  textarea.classList.add(className)
+  const prev = /** @type {any} */ (textarea)._srcFlashTimer
+  if (prev) clearTimeout(prev)
+  /** @type {any} */ (textarea)._srcFlashTimer = setTimeout(() => {
+    textarea.classList.remove(className)
+    /** @type {any} */ (textarea)._srcFlashTimer = 0
+  }, Math.max(200, durationMs))
+  return true
+}
+
+/**
+ * Focus a match range and flash the editor.
+ * @param {HTMLTextAreaElement | null | undefined} textarea
+ * @param {{ start: number, end: number, line?: number }} match
+ * @param {{ durationMs?: number, className?: string }} [opts]
+ * @returns {boolean}
+ */
+export function flashSourceRange(textarea, match, opts = {}) {
+  if (!match || !focusSourceRange(textarea, match.start, match.end, match.line)) return false
+  const className = opts.className || 'is-src-flash'
+  const durationMs = Number.isFinite(opts.durationMs) ? opts.durationMs : 1400
+  textarea.classList.remove(className)
+  void textarea.offsetWidth
+  textarea.classList.add(className)
+  const prev = /** @type {any} */ (textarea)._srcFlashTimer
+  if (prev) clearTimeout(prev)
+  /** @type {any} */ (textarea)._srcFlashTimer = setTimeout(() => {
+    textarea.classList.remove(className)
+    /** @type {any} */ (textarea)._srcFlashTimer = 0
+  }, Math.max(200, durationMs))
   return true
 }
 

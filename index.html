@@ -200,7 +200,23 @@
       <section class="panel">
         <div class="panel-head">
           <strong id="sourceLabel" data-i18n="source">源代码</strong>
-          <span id="metaSource" class="meta">源代码</span>
+          <span class="panel-head-right source-head-tools">
+            <div class="source-find" role="search">
+              <input
+                type="search"
+                id="sourceFind"
+                class="source-find-input"
+                data-i18n-placeholder="sourceFindPlaceholder"
+                placeholder="搜索代码…"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <span id="sourceFindMeta" class="source-find-meta" aria-live="polite"></span>
+              <button type="button" class="source-find-btn" id="sourceFindPrev" data-i18n-aria="sourceFindPrev" aria-label="上一处" title="">↑</button>
+              <button type="button" class="source-find-btn" id="sourceFindNext" data-i18n-aria="sourceFindNext" aria-label="下一处" title="">↓</button>
+            </div>
+            <span id="metaSource" class="meta">源代码</span>
+          </span>
         </div>
         <textarea id="source" spellcheck="false" data-i18n-placeholder="placeholder" placeholder="在此粘贴代码…"></textarea>
       </section>

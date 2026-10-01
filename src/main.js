@@ -44,7 +44,8 @@ import {
   snapshotPreviewHtml,
   decorateLightboxHtml
 } from './lib/preview-lightbox.js'
-import { srcLineFromTarget, focusSourceLine } from './lib/preview-nav.js'
+import { srcLineFromTarget, flashSourceLine, flashSourceRange } from './lib/preview-nav.js'
+import { findAllMatches, nextMatchIndex } from './lib/source-search.js'
 import {
   LOCALES,
   detectLocale,
@@ -241,6 +242,10 @@ const els = {
   jumpConfirm: document.getElementById('jumpConfirm'),
   jumpConfirmTitle: document.getElementById('jumpConfirmTitle'),
   jumpConfirmBody: document.getElementById('jumpConfirmBody'),
+  sourceFind: document.getElementById('sourceFind'),
+  sourceFindMeta: document.getElementById('sourceFindMeta'),
+  sourceFindPrev: document.getElementById('sourceFindPrev'),
+  sourceFindNext: document.getElementById('sourceFindNext'),
   metaSource: document.getElementById('metaSource'),
   metaPreview: document.getElementById('metaPreview'),
   status: document.getElementById('status'),
@@ -1060,7 +1065,7 @@ function askJumpToSource(line) {
   const dlg = els.jumpConfirm
   if (!dlg) {
     if (window.confirm(t('jumpConfirmTitle', { n: line }))) {
-      focusSourceLine(els.source, line)
+      flashSourceLine(els.source, line)
       closePreviewLightbox()
     }
     return
@@ -1108,6 +1113,96 @@ function bindPreviewNav(root) {
   root.addEventListener('mouseover', onPreviewPointer)
   root.addEventListener('mouseleave', onPreviewPointer)
   root.addEventListener('dblclick', onPreviewPointer)
+}
+
+/** @type {{ query: string, matches: import('./lib/source-search.js').SourceMatch[], index: number }} */
+const sourceFindState = { query: '', matches: [], index: -1 }
+
+function updateSourceFindMeta() {
+  if (!els.sourceFindMeta) return
+  const n = sourceFindState.matches.length
+  if (!sourceFindState.query) {
+    els.sourceFindMeta.textContent = ''
+  } else if (!n) {
+    els.sourceFindMeta.textContent = t('sourceFindNone')
+  } else {
+    els.sourceFindMeta.textContent = t('sourceFindMeta', {
+      current: sourceFindState.index + 1,
+      total: n
+    })
+  }
+  const disabled = n < 1
+  if (els.sourceFindPrev) els.sourceFindPrev.disabled = disabled
+  if (els.sourceFindNext) els.sourceFindNext.disabled = disabled
+}
+
+function refreshSourceFindMatches() {
+  const query = String(els.sourceFind?.value ?? '')
+  sourceFindState.query = query
+  sourceFindState.matches = findAllMatches(els.source?.value || '', query)
+  if (!sourceFindState.matches.length) {
+    sourceFindState.index = -1
+  } else if (sourceFindState.index < 0 || sourceFindState.index >= sourceFindState.matches.length) {
+    sourceFindState.index = 0
+  }
+  updateSourceFindMeta()
+}
+
+/**
+ * @param {1 | -1} direction
+ * @param {{ fromStart?: boolean }} [opts]
+ */
+function goSourceFind(direction, opts = {}) {
+  refreshSourceFindMatches()
+  const count = sourceFindState.matches.length
+  if (!count) {
+    updateSourceFindMeta()
+    return
+  }
+  const current = opts.fromStart ? -1 : sourceFindState.index
+  sourceFindState.index = nextMatchIndex(count, current, direction)
+  const match = sourceFindState.matches[sourceFindState.index]
+  if (match) flashSourceRange(els.source, match)
+  updateSourceFindMeta()
+}
+
+function bindSourceFind() {
+  if (!els.sourceFind) return
+  els.sourceFind.addEventListener('input', () => {
+    refreshSourceFindMatches()
+    if (sourceFindState.matches.length) {
+      sourceFindState.index = 0
+      flashSourceRange(els.source, sourceFindState.matches[0])
+      updateSourceFindMeta()
+    }
+  })
+  els.sourceFind.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      goSourceFind(e.shiftKey ? -1 : 1)
+    } else if (e.key === 'Escape') {
+      els.sourceFind.value = ''
+      refreshSourceFindMatches()
+      els.source?.focus()
+    }
+  })
+  els.sourceFindPrev?.addEventListener('click', () => goSourceFind(-1))
+  els.sourceFindNext?.addEventListener('click', () => goSourceFind(1))
+  els.source?.addEventListener('input', () => {
+    if (sourceFindState.query) refreshSourceFindMatches()
+  })
+  document.addEventListener('keydown', (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'f') return
+    if (!els.sourceFind) return
+    const tag = (e.target instanceof Element ? e.target.tagName : '').toLowerCase()
+    // Allow Ctrl+F from editor / preview; skip when typing in other inputs except source itself.
+    if (tag === 'input' && e.target !== els.sourceFind && e.target !== els.source) return
+    if (tag === 'select' || tag === 'button') return
+    e.preventDefault()
+    els.sourceFind.focus()
+    els.sourceFind.select()
+  })
+  updateSourceFindMeta()
 }
 
 function scheduleRender() {
@@ -1457,15 +1552,16 @@ els.jumpConfirm?.addEventListener('close', () => {
   if (!ok || !line) return
   // Wait a tick so the dialog releases focus before selecting in the textarea.
   requestAnimationFrame(() => {
-    focusSourceLine(els.source, line)
+    flashSourceLine(els.source, line)
     closePreviewLightbox()
   })
 })
 bindPreviewNav(els.preview)
 bindPreviewNav(els.previewLightboxBody)
 syncPreviewExpandEnabled()
+bindSourceFind()
 
-// 模式切换（自动 / 代码 / 文本）
+// 模式切换（代码 / 文本）
 els.modeSwitch?.querySelectorAll('.mode-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     setMode(btn.getAttribute('data-mode') || 'code')
