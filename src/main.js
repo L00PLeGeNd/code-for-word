@@ -1872,19 +1872,21 @@ function demoLerp(a, b, t) {
   return { x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e }
 }
 
-const DEMO_FRAME_COUNT = 36
+const DEMO_FRAME_COUNT = 34
 
 /**
- * Full README GIF storyboard (fullscreen + visible cursor, English UI).
- * Call window.__codepasteDemoFrame(i) for i in 0..count-1, screenshot each.
+ * App UI storyboard for README GIF (fullscreen + visible cursor, English UI).
+ * Real Word paste frames are captured separately (scripts/capture-word-demo.ps1)
+ * and appended by scripts/build-demo-gif.py.
  *
  * 0–1 empty · 2 hover Sample · 3–4 sample loaded
  * 5–16 move → Copy · 17–18 on Copy · 19–21 copied
- * 22–31 move → Border · 32 on Border · 33–34 open+Box · 35 box done
+ * 22–29 move → Border · 30 on Border · 31–32 open+Box · 33 box done
  */
 async function demoFrame(index) {
   ensureDemoCursor()
   const ease = (from, to, t) => {
+    if (!from || !to) return
     const p = demoLerp(from, to, t)
     demoSetCursor(p.x, p.y)
   }
@@ -1917,22 +1919,22 @@ async function demoFrame(index) {
     await demoStep(4)
     return { index: i, total, holdMs: i === 19 ? 700 : 850 }
   }
-  if (i <= 31) {
+  if (i <= 29) {
     await demoStep(4)
     const tg = demoTargets()
-    ease(tg.copy, tg.frame, (i - 21) / 10)
+    ease(tg.copy, tg.frame, (i - 21) / 8)
     return { index: i, total, holdMs: 55 }
   }
-  if (i === 32) {
+  if (i === 30) {
     await demoStep(5)
-    return { index: i, total, holdMs: 600 }
+    return { index: i, total, holdMs: 550 }
   }
-  if (i <= 34) {
+  if (i <= 32) {
     await demoStep(6)
-    return { index: i, total, holdMs: i === 33 ? 700 : 900 }
+    return { index: i, total, holdMs: i === 31 ? 650 : 800 }
   }
   await demoStep(7)
-  return { index: i, total, holdMs: 1400 }
+  return { index: i, total, holdMs: 1100 }
 }
 
 if (typeof window !== 'undefined') {
