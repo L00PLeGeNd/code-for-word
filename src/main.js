@@ -44,7 +44,7 @@ import {
   snapshotPreviewHtml,
   decorateLightboxHtml
 } from './lib/preview-lightbox.js'
-import { srcLineFromTarget, flashSourceLine, flashSourceRange } from './lib/preview-nav.js'
+import { srcLineFromTarget, flashSourceLine, flashSourceRange, queueAfterDialogClose } from './lib/preview-nav.js'
 import { findAllMatches, nextMatchIndex } from './lib/source-search.js'
 import {
   LOCALES,
@@ -1053,6 +1053,21 @@ let pendingJumpLine = 0
 /**
  * @param {number} line
  */
+function revealSourceLine(line) {
+  if (!line) return
+  const lightbox = els.previewLightbox
+  const go = () => flashSourceLine(els.source, line)
+  if (lightbox?.open) {
+    queueAfterDialogClose(lightbox, go)
+    closePreviewLightbox()
+    return
+  }
+  queueAfterDialogClose(null, go)
+}
+
+/**
+ * @param {number} line
+ */
 function askJumpToSource(line) {
   if (!line || !els.source?.value) return
   pendingJumpLine = line
@@ -1065,8 +1080,7 @@ function askJumpToSource(line) {
   const dlg = els.jumpConfirm
   if (!dlg) {
     if (window.confirm(t('jumpConfirmTitle', { n: line }))) {
-      flashSourceLine(els.source, line)
-      closePreviewLightbox()
+      revealSourceLine(line)
     }
     return
   }
@@ -1550,11 +1564,7 @@ els.jumpConfirm?.addEventListener('close', () => {
   pendingJumpLine = 0
   if (dlg) delete dlg.dataset.jumpLine
   if (!ok || !line) return
-  // Wait a tick so the dialog releases focus before selecting in the textarea.
-  requestAnimationFrame(() => {
-    flashSourceLine(els.source, line)
-    closePreviewLightbox()
-  })
+  revealSourceLine(line)
 })
 bindPreviewNav(els.preview)
 bindPreviewNav(els.previewLightboxBody)

@@ -5,7 +5,8 @@ import {
   focusSourceLine,
   flashSourceLine,
   flashSourceRange,
-  findSourceLineForSnippet
+  findSourceLineForSnippet,
+  queueAfterDialogClose
 } from './preview-nav.js'
 
 describe('preview-nav', () => {
@@ -85,5 +86,40 @@ describe('preview-nav', () => {
     expect(flashSourceLine(/** @type {any} */ (ta), 2, { durationMs: 50 })).toBe(true)
     expect(classes.has('is-src-flash')).toBe(true)
     expect(flashSourceRange(/** @type {any} */ (ta), { start: 0, end: 3, line: 1 })).toBe(true)
+  })
+
+  it('waits for an open dialog’s close before running the callback', () => {
+    const calls = []
+    const listeners = []
+    const dlg = {
+      open: true,
+      addEventListener(type, fn) {
+        listeners.push({ type, fn })
+      }
+    }
+    const prev = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = undefined
+    try {
+      queueAfterDialogClose(dlg, () => calls.push('ran'))
+      expect(calls).toEqual([])
+      expect(listeners).toHaveLength(1)
+      expect(listeners[0].type).toBe('close')
+      listeners[0].fn()
+      expect(calls).toEqual(['ran'])
+    } finally {
+      globalThis.requestAnimationFrame = prev
+    }
+  })
+
+  it('runs after a closed dialog without waiting', () => {
+    const calls = []
+    const prev = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = undefined
+    try {
+      queueAfterDialogClose({ open: false, addEventListener() {} }, () => calls.push('ran'))
+      expect(calls).toEqual(['ran'])
+    } finally {
+      globalThis.requestAnimationFrame = prev
+    }
   })
 })

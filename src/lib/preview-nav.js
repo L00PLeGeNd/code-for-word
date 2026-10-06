@@ -3,6 +3,25 @@
  */
 
 /**
+ * Run `fn` on the next frame after a modal dialog has closed.
+ * If `dialog` is already closed (or missing), still wait one frame so a
+ * stacked confirm dialog can release focus first.
+ * @param {{ open?: boolean, addEventListener?: Function } | null | undefined} dialog
+ * @param {() => void} fn
+ */
+export function queueAfterDialogClose(dialog, fn) {
+  const later = () => {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fn)
+    else fn()
+  }
+  if (dialog && dialog.open && typeof dialog.addEventListener === 'function') {
+    dialog.addEventListener('close', later, { once: true })
+    return
+  }
+  later()
+}
+
+/**
  * Character offsets for each 1-based source line.
  * @param {string} source
  * @returns {{ start: number, end: number, text: string }[]}
