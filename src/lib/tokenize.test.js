@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { htmlToStyledLines } from './tokenize.js'
+import { htmlToStyledLines, codeToStyledLines, looksLikeSql } from './tokenize.js'
 import { getTheme } from '../themes.js'
 
 describe('tokenize', () => {
@@ -18,5 +18,37 @@ describe('tokenize', () => {
     expect(lines).toHaveLength(2)
     expect(lines[0][0].text).toBe('a')
     expect(lines[1][0].text).toBe('b')
+  })
+})
+
+describe('looksLikeSql / auto SQL', () => {
+  it('recognizes common SQL shapes', () => {
+    expect(looksLikeSql('SELECT id, name FROM users WHERE active = 1')).toBe(true)
+    expect(looksLikeSql('INSERT INTO t (a) VALUES (1)')).toBe(true)
+    expect(looksLikeSql('CREATE TABLE users (id INT PRIMARY KEY)')).toBe(true)
+    expect(looksLikeSql('def foo():\n  return 1')).toBe(false)
+  })
+
+  it('forces sql when Auto would otherwise mis-detect', () => {
+    const calls = []
+    const hljs = {
+      highlight(source, opts) {
+        calls.push(['highlight', opts.language])
+        return { value: `<span class="hljs-keyword">SELECT</span> 1`, language: opts.language }
+      },
+      highlightAuto() {
+        calls.push(['auto'])
+        return { value: 'SELECT 1', language: 'csharp' }
+      }
+    }
+    const { language } = codeToStyledLines(
+      'SELECT id FROM users WHERE id > 0',
+      'auto',
+      'vscode-light',
+      hljs
+    )
+    expect(language).toBe('sql')
+    expect(calls[0]).toEqual(['highlight', 'sql'])
+    expect(calls.some((c) => c[0] === 'auto')).toBe(false)
   })
 })

@@ -13,7 +13,7 @@ const KEYWORD_RE =
 const FENCE_RE = /^\s{0,3}(```|~~~)\s*(\S*)\s*$/
 // Case-sensitive line-start keywords: prose sentences capitalize ("From …"), code does not.
 const CODE_START_RE =
-  /^\s*(import|from|def|class|function|const|let|var|return|print|package|using|namespace|public|private|protected|static|final|export|require|module|select|insert|update|delete|echo|fn|func|async|type|struct|enum|interface|end|elif|pass|throw|new)\b/
+  /^\s*(import|from|def|class|function|const|let|var|return|print|package|using|namespace|public|private|protected|static|final|export|require|module|select|insert|update|delete|create|alter|drop|with|echo|fn|func|async|type|struct|enum|interface|end|elif|pass|throw|new)\b/
 
 /** @param {string} text */
 function countCjk(text) {

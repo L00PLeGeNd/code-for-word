@@ -1058,11 +1058,12 @@ function revealSourceLine(line) {
   const lightbox = els.previewLightbox
   const go = () => flashSourceLine(els.source, line)
   if (lightbox?.open) {
-    queueAfterDialogClose(lightbox, go)
+    // Close after arming the listener; delay so Electron clears inert/focus.
+    queueAfterDialogClose(lightbox, go, { delayMs: 80, fallbackMs: 350 })
     closePreviewLightbox()
     return
   }
-  queueAfterDialogClose(null, go)
+  queueAfterDialogClose(null, go, { delayMs: 16, fallbackMs: 0 })
 }
 
 /**

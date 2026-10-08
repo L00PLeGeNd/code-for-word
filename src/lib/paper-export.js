@@ -186,15 +186,30 @@ export function paperToRtf(paras, options = {}) {
       }
       const total = group.length
       if (frame === 'box') {
-        // 单段 + \line：连续边框（与代码模式一致，避免 Word 拒绝粘贴）
-        const head = paraHead(group[0], rtfParaBorders('box', ac, 0, 0) || boxBorders(ac), showFill ? `\\cbpat${bg}` : '')
-        const inner = group.map((row, idx) => {
+        // Stacked table: one cell per line → hard Enter in Word (not soft \\line).
+        const left = group[0].leftIndentTwips || 0
+        const cellRight = Math.max(left + 2400, TABLE_TOTAL_TWIPS)
+        const width = cellRight - left
+        const F = `\\brdrs\\brdrw40\\brdrcf${ac} `
+        const rowsRtf = group.map((row, idx) => {
+          const isFirst = idx === 0
+          const isLast = idx === total - 1
+          let def = `\\trowd\\trgaph0\\trleft${left}\\trftsWidth3\\trwWidth${width}\\clvertalc`
+          if (isFirst) def += `\\clbrdrt${F}`
+          def += `\\clbrdrl${F}\\clbrdrr${F}`
+          if (isLast) def += `\\clbrdrb${F}`
+          if (showFill) def += `\\clcbpat${bg}`
+          def += `\\cellx${cellRight}`
           const lnRun = lineNumbers
             ? `{\\noproof\\f${fontIndex.get(row.fontName) ?? 0}\\cf${ln}\\b0\\i0 ${escapeRtf(`${idx + 1}${suffix}  `)}}`
             : ''
-          return `${lnRun}${runText(row.runs)}`
-        }).join('\\line\n')
-        out.push(`${head}${inner}\\par`)
+          const linePart = `\\sl${Math.max(240, Math.round(row.fontSizePt * 20 * 1.35))}\\slmult0`
+          const fIdx = fontIndex.get(row.fontName) ?? 0
+          const head =
+            `\\pard\\intbl\\plain\\ql${linePart}\\f${fIdx}\\fs${Math.round(row.fontSizePt * 2)}\\cf${fg} `
+          return `${def}\n${head}${lnRun}${runText(row.runs)}\\cell\\row`
+        })
+        out.push(rowsRtf.join('\n'))
       } else {
         group.forEach((row, idx) => {
           const borders = rtfParaBorders(frame, ac, idx, total, false)
@@ -224,12 +239,6 @@ export function paperToRtf(paras, options = {}) {
     out.join('\n'),
     '}'
   ].join('\n')
-}
-
-/** box 边框（rtfParaBorders 对 box 返回空串，这里显式给出） */
-function boxBorders(ac) {
-  const s = `\\brdrs\\brdrw40\\brdrcf${ac}`
-  return `\\brdrt${s}\\brdrl${s}\\brdrr${s}\\brdrb${s}`
 }
 
 // ————————————————— 表格（markdown 管道表 → Word 表格）—————————————————

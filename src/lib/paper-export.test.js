@@ -91,12 +91,13 @@ describe('paperToRtf', () => {
     expect(xml).toContain('名称')
   })
 
-  it('emits box frame as single multi-line paragraph', () => {
+  it('emits box frame with hard Enter per line (no soft \\line)', () => {
     const src = ['```python', 'x = 1', 'y = 2', '```'].join('\n')
     const paras = buildPaper(src)
     const rtf = paperToRtf(paras, { frameStyle: 'box' })
-    expect(rtf).toContain('\\brdrt')
-    expect(rtf).toContain('\\line')
+    expect(rtf).not.toContain('\\line')
+    expect(rtf).toContain('\\trowd')
+    expect((rtf.match(/\\cell\\row/g) || []).length).toBeGreaterThanOrEqual(2)
   })
 })
 

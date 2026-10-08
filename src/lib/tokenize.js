@@ -100,11 +100,52 @@ export function htmlToStyledLines(html, theme) {
   return lines
 }
 
+/** Languages passed to highlightAuto so SQL is not crowded out by C#/PHP. */
+export const AUTO_LANGUAGE_SUBSET = [
+  'python',
+  'javascript',
+  'typescript',
+  'java',
+  'c',
+  'cpp',
+  'csharp',
+  'go',
+  'rust',
+  'kotlin',
+  'sql',
+  'bash',
+  'xml',
+  'css',
+  'json',
+  'yaml',
+  'php'
+]
+
+/**
+ * Heuristic: treat paste as SQL when Auto alone often picks csharp/php.
+ * @param {string} source
+ */
+export function looksLikeSql(source) {
+  const s = String(source || '').trim()
+  if (!s) return false
+  if (
+    /^\s*(WITH\s+\w[\w.]*\s+AS\s*\(|SELECT\b|INSERT\s+INTO\b|UPDATE\b|DELETE\s+FROM\b|CREATE\s+(OR\s+REPLACE\s+)?(TABLE|VIEW|INDEX|DATABASE|SCHEMA|PROCEDURE|FUNCTION)\b|ALTER\s+TABLE\b|DROP\s+(TABLE|VIEW|INDEX)\b)/i.test(
+      s
+    )
+  ) {
+    return true
+  }
+  const hasFrom = /\bFROM\s+[\w."`[]+/i.test(s)
+  const hasJoin = /\b(INNER\s+|LEFT\s+|RIGHT\s+|FULL\s+|OUTER\s+)?JOIN\b/i.test(s)
+  const hasWhere = /\bWHERE\b/i.test(s)
+  return hasFrom && (hasJoin || hasWhere)
+}
+
 /**
  * @param {string} code
  * @param {string} language
  * @param {string} themeId
- * @param {{ highlight: (code: string, opts: { language: string, ignoreIllegals?: boolean }) => { value: string, language?: string }, highlightAuto: (code: string) => { value: string, language?: string } }} hljs
+ * @param {{ highlight: (code: string, opts: { language: string, ignoreIllegals?: boolean }) => { value: string, language?: string }, highlightAuto: (code: string, languageSubset?: string[]) => { value: string, language?: string } }} hljs
  */
 export function codeToStyledLines(code, language, themeId, hljs) {
   const theme = getTheme(themeId)
@@ -116,18 +157,28 @@ export function codeToStyledLines(code, language, themeId, hljs) {
 
   let value
   let lang = language
-  if (!language || language === 'auto') {
-    const result = hljs.highlightAuto(source)
-    value = result.value
-    lang = result.language || 'plaintext'
-  } else {
+  if ((!language || language === 'auto') && looksLikeSql(source)) {
     try {
-      value = hljs.highlight(source, { language, ignoreIllegals: true }).value
-      lang = language
+      value = hljs.highlight(source, { language: 'sql', ignoreIllegals: true }).value
+      lang = 'sql'
     } catch {
-      const result = hljs.highlightAuto(source)
+      value = undefined
+    }
+  }
+  if (value == null) {
+    if (!language || language === 'auto') {
+      const result = hljs.highlightAuto(source, AUTO_LANGUAGE_SUBSET)
       value = result.value
       lang = result.language || 'plaintext'
+    } else {
+      try {
+        value = hljs.highlight(source, { language, ignoreIllegals: true }).value
+        lang = language
+      } catch {
+        const result = hljs.highlightAuto(source, AUTO_LANGUAGE_SUBSET)
+        value = result.value
+        lang = result.language || 'plaintext'
+      }
     }
   }
 

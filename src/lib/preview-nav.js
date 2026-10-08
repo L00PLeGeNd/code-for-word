@@ -3,22 +3,37 @@
  */
 
 /**
- * Run `fn` on the next frame after a modal dialog has closed.
- * If `dialog` is already closed (or missing), still wait one frame so a
- * stacked confirm dialog can release focus first.
+ * Run `fn` after a modal dialog has closed.
+ * Electron often skips the `close` event when nested dialogs stack (lightbox +
+ * jump confirm), so a fallback timer still fires once.
  * @param {{ open?: boolean, addEventListener?: Function } | null | undefined} dialog
  * @param {() => void} fn
+ * @param {{ delayMs?: number, fallbackMs?: number }} [opts]
  */
-export function queueAfterDialogClose(dialog, fn) {
-  const later = () => {
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fn)
-    else fn()
+export function queueAfterDialogClose(dialog, fn, opts = {}) {
+  const delayMs = Number.isFinite(opts.delayMs) ? Math.max(0, opts.delayMs) : 0
+  const fallbackMs = Number.isFinite(opts.fallbackMs) ? opts.fallbackMs : 280
+  let done = false
+  const kick = () => {
+    if (done) return
+    done = true
+    const run = () => {
+      try {
+        fn()
+      } catch {
+        /* ignore host focus errors */
+      }
+    }
+    if (delayMs > 0) setTimeout(run, delayMs)
+    else if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run)
+    else run()
   }
   if (dialog && dialog.open && typeof dialog.addEventListener === 'function') {
-    dialog.addEventListener('close', later, { once: true })
+    dialog.addEventListener('close', kick, { once: true })
+    if (fallbackMs > 0) setTimeout(kick, fallbackMs)
     return
   }
-  later()
+  kick()
 }
 
 /**

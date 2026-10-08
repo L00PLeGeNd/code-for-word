@@ -104,33 +104,7 @@ function resolveFont(fontName) {
 }
 
 /**
- * Caption row borders: underline every row; box also gets top on first row.
- * @param {import('./frame.js').FrameStyle} frame
- * @param {number} ac
- * @param {boolean} isFirst
- */
-function captionBorders(frame, ac, isFirst) {
-  // \\brsp keeps text off the stroke. WPS often clips 说明栏 glyphs when
-  // borders sit flush on Songti/Heiti with no line spacing or padding.
-  const s = `\\brdrs\\brdrw40\\brdrcf${ac}\\brsp60`
-  const under = `\\brdrb\\brdrs\\brdrw20\\brdrcf${ac}\\brsp40`
-  if (frame === 'box') {
-    const top = isFirst ? `\\brdrt${s}` : ''
-    return `${top}\\brdrl${s}\\brdrr${s}${under}`
-  }
-  if (frame === 'rails') return `\\brdrl${s}\\brdrr${s}${under}`
-  return `\\brdrl${s}${under}`
-}
-
-/**
- * Code-block borders for the single box paragraph (caption owns the top edge).
- * @param {import('./frame.js').FrameStyle} frame
- * @param {number} ac
- * @param {boolean} hasCaption
- */
-/**
- * Per-line borders. Box + underlines uses one paragraph per line so each row
- * can have a rule; the last line keeps the outer bottom stroke.
+ * Per-line borders (no caption). Box + underlines is handled by the table path.
  * @param {import('./frame.js').FrameStyle} frame
  * @param {number} ac
  * @param {number} index
@@ -149,16 +123,6 @@ function codeLineBorders(frame, ac, index, total, hasCaption, rowRules) {
     ? `\\brdrb${frameStroke}`
     : under
   return `${top}${side}${bottom}`
-}
-
-function codeBlockBorders(frame, ac, hasCaption) {
-  const s = `\\brdrs\\brdrw40\\brdrcf${ac}`
-  if (frame === 'box') {
-    const top = hasCaption ? '' : `\\brdrt${s}`
-    return `${top}\\brdrl${s}\\brdrr${s}\\brdrb${s}`
-  }
-  if (frame === 'rails') return `\\brdrl${s}\\brdrr${s}`
-  return `\\brdrl${s}`
 }
 
 /**
@@ -310,73 +274,52 @@ export function linesToRtf(lines, options) {
   // Caption needs its own \\sl: default single spacing + paragraph borders
   // crops descenders / CJK in WPS even when Word looks fine.
   const capLinePart = `\\sl${Math.max(276, Math.round(capFs * 14))}\\slmult0 `
-  let captionPart = ''
-  if (capLines.length && !options.rowRules) {
-    captionPart = capLines.map((text, i) => {
-      const borders = captionBorders(frame, ac, i === 0)
-      return (
-        `\\pard\\plain\\ql\\hyphpar0\\nowidctlpar` +
-        `\\li${left}\\ri${right}\\sa40\\sb40${capLinePart}` +
-        `\\f1\\fs${capFs}\\cf${capCf}${capB}${capI}${capShade}${borders} ` +
-        `${escapeRtf(text)}\\par\n`
-      )
-    }).join('')
-  }
-
   const rowRules = !!options.rowRules
   let body
-  if (rowRules) {
-    // Paragraph \\brdrb between lines breaks the side rails. A single-level
-    // table matches DOCX: outer stroke on the row, thin rule between rows.
+  // Box / captions / row underlines share one table so left/right rails stay
+  // aligned and each code line is a real cell (hard Enter in Word — not \\line).
+  if (frame === 'box' || rowRules || capLines.length) {
     const cellRight = Math.max(left + 2400, geo.page - right)
     const width = cellRight - left
     const F = `\\brdrs\\brdrw40\\brdrcf${ac} `
     const U = `\\brdrs\\brdrw20\\brdrcf${ac} `
-    /** @type {{ caption: boolean, last: boolean, inner: string }[]} */
-    const items = [
-      ...capLines.map((text) => ({ caption: true, last: false, inner: escapeRtf(text) })),
-      ...rows.map((row, i) => ({
-        caption: false,
-        last: i === rows.length - 1,
-        inner: lineContent(row, i)
-      }))
-    ]
-    body = items.map((item) => {
-      let def = `\\trowd\\trgaph0\\trleft${left}\\trftsWidth3\\trwWidth${width}`
-      if (frame === 'box') def += `\\trbrdrt${F}\\trbrdrl${F}\\trbrdrb${F}\\trbrdrr${F}`
-      else if (frame === 'rails') def += `\\trbrdrl${F}\\trbrdrr${F}`
-      else def += `\\trbrdrl${F}`
-      def += `\\trbrdrh${U}\\clvertalc`
-      if (frame === 'box') def += `\\clbrdrt${F}`
-      def += `\\clbrdrl${F}`
-      def += `\\clbrdrb${frame === 'box' && item.last ? F : U}`
-      if (frame !== 'bar') def += `\\clbrdrr${F}`
+    /** @type {{ caption: boolean, inner: string }[]} */
+    const items = []
+    for (const text of capLines) {
+      items.push({ caption: true, inner: escapeRtf(text) })
+    }
+    for (let i = 0; i < rows.length; i++) {
+      items.push({ caption: false, inner: lineContent(rows[i], i) })
+    }
+    if (!items.length) items.push({ caption: false, inner: ' ' })
+    body = items.map((item, idx) => {
+      const isFirst = idx === 0
+      const isLast = idx === items.length - 1
+      // Cell borders only. Row-level \\trbrdr* on every row doubles strokes and
+      // makes the frame look offset between caption and code.
+      let def = `\\trowd\\trgaph0\\trleft${left}\\trftsWidth3\\trwWidth${width}\\clvertalc`
+      if (frame === 'box') {
+        if (isFirst) def += `\\clbrdrt${F}`
+        def += `\\clbrdrl${F}\\clbrdrr${F}`
+        if (isLast) def += `\\clbrdrb${F}`
+        else if (item.caption || rowRules) def += `\\clbrdrb${U}`
+      } else if (frame === 'rails') {
+        def += `\\clbrdrl${F}\\clbrdrr${F}`
+        if (!isLast && (item.caption || rowRules)) def += `\\clbrdrb${U}`
+      } else {
+        def += `\\clbrdrl${F}`
+        if (!isLast && (item.caption || rowRules)) def += `\\clbrdrb${U}`
+      }
       if (!noFill) def += `\\clcbpat${item.caption ? capBg : bg}`
       def += `\\cellx${cellRight}`
       const head = item.caption
-        ? `\\pard\\intbl\\plain\\ql${capLinePart}\\f1\\fs${capFs}\\cf${capCf}${capB}${capI}${capShade} `
+        ? `\\pard\\intbl\\plain\\ql\\sa40\\sb40${capLinePart}\\f1\\fs${capFs}\\cf${capCf}${capB}${capI}${capShade} `
         : `\\pard\\intbl\\plain\\ql${linePart}\\f0\\fs${fontSizeHalfPoints}${shade}\\cf${fg} `
       return `${def}\n${head}${item.inner}\\cell\\row`
     }).join('\n')
-  } else if (frame === 'box') {
-    // One paragraph + \\line keeps a continuous box; per-line \\par box borders
-    // have made Word reject the clipboard paste on some builds.
-    const boxBorders = codeBlockBorders(frame, ac, !!capLines.length)
-    const head = paraHead({
-      left,
-      right,
-      linePart,
-      fontSizeHalfPoints,
-      shade,
-      fg,
-      borders: boxBorders,
-      insetTab
-    })
-    const inner = rows.map((row, i) => lineContent(row, i)).join('\\line\n')
-    body = `${head}${inner}\\par`
   } else {
     body = rows.map((row, i) => {
-      const borders = codeLineBorders(frame, ac, i, rows.length, !!capLines.length, rowRules)
+      const borders = codeLineBorders(frame, ac, i, rows.length, false, false)
       const head = paraHead({
         left,
         right,
@@ -396,7 +339,7 @@ export function linesToRtf(lines, options) {
     `{\\fonttbl{\\f0\\fnil\\fcharset${font.charset} ${font.name};}{\\f1\\fnil\\fcharset${capFont.charset} ${capFont.name};}}`,
     table,
     '{\\*\\generator CodePaste;}',
-    captionPart + body,
+    body,
     '}'
   ].join('\n')
 }

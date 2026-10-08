@@ -12,7 +12,7 @@ import {
   resolveFrameStyle,
   cssFrameBorders,
   cssBorderStyle,
-  cssCaptionDivider
+  cssStackedRowBorders
 } from './frame.js'
 import {
   shouldShowCaption,
@@ -302,43 +302,12 @@ function buildPasteHtml({
   right,
   codeInset
 }) {
-  const frameCss = cssBorderStyle(cssFrameBorders(frame, accent))
-  const divider = cssBorderStyle(cssCaptionDivider(accent))
   const insetPt = codeInset > 0 ? (codeInset / 20).toFixed(1) : '0'
   const linePt = Math.max(12, Math.round(fontSizePt * 1.35 * 10) / 10)
   const textCss =
     `border:none;margin:0;padding:0;vertical-align:top;` +
     `font-family:${fontStack};font-size:${fontSizePt}pt;` +
     `line-height:${linePt}pt;mso-line-height-rule:exactly;mso-no-proof:yes;`
-
-  /** @type {string[]} */
-  const parts = []
-
-  if (showCap) {
-    const raw = resolveCaptionLines(options)
-    const display = captionDisplayLines(options)
-    const capFont = resolveCaptionFont(options)
-    const capBg = resolveCaptionBackground(options)
-    const capColor = resolveCaptionColor(options)
-    const capBold = resolveCaptionBold(options)
-    const capItalic = resolveCaptionItalic(options)
-    const capFs = Math.max(10, fontSizePt + 1)
-    display.forEach((text, i) => {
-      const filled = !!normalizeCaption(raw[i] ?? text)
-      if (!filled && !options.preview) return
-      const weight = capBold ? 'bold' : '400'
-      const style = capItalic ? 'italic' : 'normal'
-      parts.push(
-        `<div class="listing-caption-row" style="` +
-          `${divider}` +
-          `background:${capBg};padding:4pt 10pt;` +
-          `font-family:${capFont},'SimSun','Songti SC',serif;` +
-          `font-size:${capFs}pt;font-weight:${weight};font-style:${style};line-height:1.45;` +
-          `color:${capColor};text-align:left;mso-line-height-rule:exactly;">` +
-          `${escapeHtml(text || '\u00a0')}</div>`
-      )
-    })
-  }
 
   /** @type {string[]} */
   const codeTrs = []
@@ -373,11 +342,10 @@ function buildPasteHtml({
     `border-collapse:collapse;border:none;width:100%;margin:0;">` +
     `${codeTrs.join('')}</table>`
 
-  parts.push(
+  const codeWrap =
     `<div class="listing-code-wrap" style="` +
-      `border:none;margin:0;padding:${options.rowRules ? '1pt 0' : '6pt 8pt 6pt 4pt'};background:${bg};">` +
-      `${codeTable}</div>`
-  )
+    `border:none;margin:0;padding:${options.rowRules ? '1pt 0' : '6pt 8pt 6pt 4pt'};background:${bg};">` +
+    `${codeTable}</div>`
 
   // Paste cannot change the destination document's page setup. margin-left sticks
   // (→ tblInd); fixed paper widths fight the host page and often kill borders.
@@ -393,13 +361,67 @@ function buildPasteHtml({
     widthCss = `width:${pct.toFixed(1)}%;`
   }
 
-  const table =
+  const tableOpen =
     `<table class="listing-block" data-frame="${frame}" cellspacing="0" cellpadding="0" border="0" style="` +
     `border-collapse:collapse;border:none;${marginCss}${widthCss}` +
-    `mso-table-lspace:0pt;mso-table-rspace:0pt;mso-cellspacing:0cm;">` +
+    `mso-table-lspace:0pt;mso-table-rspace:0pt;mso-cellspacing:0cm;">`
+
+  // Caption + code in one mega-cell: Word often keeps the top stroke and drops
+  // the bottom. Stack rows so top lives on the first caption and bottom on code.
+  if (showCap) {
+    const raw = resolveCaptionLines(options)
+    const display = captionDisplayLines(options)
+    const capFont = resolveCaptionFont(options)
+    const capBg = resolveCaptionBackground(options)
+    const capColor = resolveCaptionColor(options)
+    const capBold = resolveCaptionBold(options)
+    const capItalic = resolveCaptionItalic(options)
+    const capFs = Math.max(10, fontSizePt + 1)
+    /** @type {string[]} */
+    const outerTrs = []
+    let capIndex = 0
+    display.forEach((text, i) => {
+      const filled = !!normalizeCaption(raw[i] ?? text)
+      if (!filled && !options.preview) return
+      const weight = capBold ? 'bold' : '400'
+      const style = capItalic ? 'italic' : 'normal'
+      const isFirst = capIndex === 0
+      capIndex += 1
+      const borders = cssBorderStyle(cssStackedRowBorders(frame, accent, {
+        top: isFirst,
+        divider: true
+      }))
+      outerTrs.push(
+        `<tr><td class="listing-caption-row" style="${borders}` +
+          `padding:4pt 10pt;margin:0;background:${capBg};vertical-align:top;` +
+          `font-family:${capFont},'SimSun','Songti SC',serif;` +
+          `font-size:${capFs}pt;font-weight:${weight};font-style:${style};line-height:1.45;` +
+          `color:${capColor};text-align:left;mso-line-height-rule:exactly;">` +
+          `${escapeHtml(text || '\u00a0')}</td></tr>`
+      )
+    })
+    const codeBorders = cssBorderStyle(cssStackedRowBorders(frame, accent, {
+      bottom: frame === 'box'
+    }))
+    outerTrs.push(
+      `<tr><td class="listing-frame" style="${codeBorders}` +
+        `padding:0;margin:0;background:${bg};vertical-align:top;">${codeWrap}</td></tr>`
+    )
+    // No caption rows survived (all empty on paste) — fall through to single cell.
+    if (capIndex > 0) {
+      return (
+        `<div class="listing-outer" style="display:block;text-align:left;">` +
+        `${tableOpen}${outerTrs.join('')}</table></div>`
+      )
+    }
+  }
+
+  const frameCss = cssBorderStyle(cssFrameBorders(frame, accent))
+  const table =
+    `${tableOpen}` +
     `<tr><td class="listing-frame" style="${frameCss}` +
     `padding:0;margin:0;background:${bg};vertical-align:top;">` +
-    `${parts.join('')}</td></tr></table>`
+    `${codeWrap}</td></tr></table>`
 
   return (
     `<div class="listing-outer" style="display:block;text-align:left;">${table}</div>`

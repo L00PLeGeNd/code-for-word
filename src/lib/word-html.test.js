@@ -169,10 +169,13 @@ describe('Word HTML exporter', () => {
     )
     expect(paste).toContain('<table')
     expect(paste).toContain('你好')
-    expect(paste).toMatch(/listing-frame[^>]*border:2\.25pt solid #1A1A1A/)
+    // Top on first caption row, bottom on the code cell — not one mega-cell.
+    expect(paste).toMatch(/listing-caption-row[^>]*border-top:2\.25pt solid #1A1A1A/)
     expect(paste).toMatch(/listing-caption-row[^>]*border-bottom:1pt solid #1A1A1A/)
-    expect(paste).not.toMatch(/listing-caption-row[^>]*border-left:2\.25pt/)
-    // One outer data row (frame cell); code lines are nested
+    expect(paste).toMatch(/listing-caption-row[^>]*border-left:2\.25pt solid #1A1A1A/)
+    expect(paste).toMatch(/listing-frame[^>]*border-bottom:2\.25pt solid #1A1A1A/)
+    expect(paste).toMatch(/listing-frame[^>]*border-left:2\.25pt solid #1A1A1A/)
+    expect(paste).not.toMatch(/listing-frame[^>]*border-top:2\.25pt/)
     expect((paste.match(/listing-frame/g) || []).length).toBe(1)
   })
 

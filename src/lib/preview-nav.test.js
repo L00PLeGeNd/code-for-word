@@ -100,7 +100,7 @@ describe('preview-nav', () => {
     const prev = globalThis.requestAnimationFrame
     globalThis.requestAnimationFrame = undefined
     try {
-      queueAfterDialogClose(dlg, () => calls.push('ran'))
+      queueAfterDialogClose(dlg, () => calls.push('ran'), { fallbackMs: 0 })
       expect(calls).toEqual([])
       expect(listeners).toHaveLength(1)
       expect(listeners[0].type).toBe('close')
@@ -117,6 +117,45 @@ describe('preview-nav', () => {
     globalThis.requestAnimationFrame = undefined
     try {
       queueAfterDialogClose({ open: false, addEventListener() {} }, () => calls.push('ran'))
+      expect(calls).toEqual(['ran'])
+    } finally {
+      globalThis.requestAnimationFrame = prev
+    }
+  })
+
+  it('falls back if dialog close never fires (Electron nested modals)', async () => {
+    const calls = []
+    const dlg = {
+      open: true,
+      addEventListener() {}
+    }
+    const prev = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = undefined
+    try {
+      queueAfterDialogClose(dlg, () => calls.push('ran'), { fallbackMs: 20, delayMs: 0 })
+      expect(calls).toEqual([])
+      await new Promise((r) => setTimeout(r, 50))
+      expect(calls).toEqual(['ran'])
+    } finally {
+      globalThis.requestAnimationFrame = prev
+    }
+  })
+
+  it('runs the callback only once when both close and fallback fire', async () => {
+    const calls = []
+    const listeners = []
+    const dlg = {
+      open: true,
+      addEventListener(type, fn) {
+        listeners.push({ type, fn })
+      }
+    }
+    const prev = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = undefined
+    try {
+      queueAfterDialogClose(dlg, () => calls.push('ran'), { fallbackMs: 30, delayMs: 0 })
+      listeners[0].fn()
+      await new Promise((r) => setTimeout(r, 50))
       expect(calls).toEqual(['ran'])
     } finally {
       globalThis.requestAnimationFrame = prev

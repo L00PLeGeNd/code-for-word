@@ -6,7 +6,8 @@ import {
   cssCaptionBorders,
   cssCodeBorders,
   cssOuterTableBorders,
-  cssCaptionDivider
+  cssCaptionDivider,
+  cssStackedRowBorders
 } from './frame.js'
 
 describe('frameStyle', () => {
@@ -63,5 +64,16 @@ describe('frameStyle', () => {
     expect(div.border).toBe('none')
     expect(div.borderBottom).toBe('1pt solid #C00000')
     expect(div.borderLeft).toBeUndefined()
+  })
+
+  it('stacked caption/code rows put outer top and bottom on different cells', () => {
+    const top = cssStackedRowBorders('box', '#007ACC', { top: true, divider: true })
+    expect(top.borderTop).toBe('2.25pt solid #007ACC')
+    expect(top.borderBottom).toBe('1pt solid #007ACC')
+    expect(top.borderLeft).toBe('2.25pt solid #007ACC')
+    const bottom = cssStackedRowBorders('box', '#007ACC', { bottom: true })
+    expect(bottom.borderTop).toBe('none')
+    expect(bottom.borderBottom).toBe('2.25pt solid #007ACC')
+    expect(bottom.borderRight).toBe('2.25pt solid #007ACC')
   })
 })

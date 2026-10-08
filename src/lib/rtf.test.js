@@ -224,7 +224,7 @@ describe('RTF exporter', () => {
     expect(rtf).not.toContain('\\brdrt')
   })
 
-  it('box frame is one paragraph with four borders and soft line breaks', () => {
+  it('box frame uses one table row per line (hard Enter, continuous outer frame)', () => {
     const rtf = linesToRtf(
       [
         [{ text: 'a', color: '#000000' }],
@@ -239,15 +239,36 @@ describe('RTF exporter', () => {
         accentLeft: '#C00000'
       }
     )
-    // no table — Word "保留原格式" tears nested cells apart
-    expect(rtf).not.toContain('\\trowd')
-    expect(rtf).toMatch(/\\brdrt\\brdrs\\brdrw40\\brdrcf\d+/)
-    expect(rtf).toMatch(/\\brdrb\\brdrs\\brdrw40\\brdrcf\d+/)
-    expect(rtf).toMatch(/\\brdrl\\brdrs\\brdrw40\\brdrcf\d+/)
-    expect(rtf).toMatch(/\\brdrr\\brdrs\\brdrw40\\brdrcf\d+/)
-    expect((rtf.match(/\\line/g) || []).length).toBe(2)
-    expect((rtf.match(/\\pard\\plain/g) || []).length).toBe(1)
-    expect((rtf.match(/\\cbpat/g) || []).length).toBe(1)
+    // Soft \\line becomes Shift+Enter in Word; one cell per line → hard Enter.
+    expect(rtf).not.toContain('\\line')
+    expect(rtf).toContain('\\trowd')
+    expect((rtf.match(/\\cell\\row/g) || []).length).toBe(3)
+    expect((rtf.match(/\\clbrdrt\\brdrs\\brdrw40/g) || []).length).toBe(1)
+    expect((rtf.match(/\\clbrdrb\\brdrs\\brdrw40/g) || []).length).toBe(1)
+    // No thin dividers between code lines when rowRules is off
+    expect((rtf.match(/\\clbrdrb\\brdrs\\brdrw20/g) || []).length).toBe(0)
+    expect((rtf.match(/\\clbrdrl\\brdrs\\brdrw40/g) || []).length).toBe(3)
+  })
+
+  it('box+caption uses hard breaks for multi-line code (no soft \\line)', () => {
+    const rtf = linesToRtf(
+      [
+        [{ text: 'a', color: '#000000' }],
+        [{ text: 'b', color: '#000000' }]
+      ],
+      {
+        background: '#FFFFFF',
+        foreground: '#000000',
+        frameStyle: 'box',
+        captionEnabled: true,
+        captionLines: ['代码 1'],
+        accentLeft: '#007ACC'
+      }
+    )
+    expect(rtf).not.toContain('\\line')
+    expect((rtf.match(/\\cell\\row/g) || []).length).toBe(3)
+    // Thin rule under caption only
+    expect((rtf.match(/\\clbrdrb\\brdrs\\brdrw20/g) || []).length).toBe(1)
   })
 
   it('row underlines are table rules inside a continuous outer frame', () => {
@@ -267,11 +288,11 @@ describe('RTF exporter', () => {
       }
     )
     expect(rtf).toContain('\\trowd')
-    expect(rtf).toMatch(/\\trbrdrl\\brdrs\\brdrw40/)
-    expect(rtf).toMatch(/\\trbrdrr\\brdrs\\brdrw40/)
-    expect(rtf).toMatch(/\\trbrdrt\\brdrs\\brdrw40/)
-    expect(rtf).toMatch(/\\trbrdrb\\brdrs\\brdrw40/)
-    expect(rtf).toMatch(/\\trbrdrh\\brdrs\\brdrw20/)
+    // Cell borders only: one outer top, one outer bottom, thin rules between.
+    expect((rtf.match(/\\clbrdrt\\brdrs\\brdrw40/g) || []).length).toBe(1)
+    expect((rtf.match(/\\clbrdrb\\brdrs\\brdrw40/g) || []).length).toBe(1)
+    expect((rtf.match(/\\clbrdrb\\brdrs\\brdrw20/g) || []).length).toBe(2)
+    expect(rtf).not.toContain('\\trbrdrt')
     expect((rtf.match(/\\cell\\row/g) || []).length).toBe(3)
   })
 
@@ -293,7 +314,7 @@ describe('RTF exporter', () => {
     expect(para).not.toMatch(/\\noproof\\li/)
   })
 
-  it('emits in-box caption rows with fill, font, and underlines (no line numbers)', () => {
+  it('box+caption shares one table so top/bottom and side rails stay aligned', () => {
     const rtf = linesToRtf(
       [[{ text: 'x', color: '#000000' }]],
       {
@@ -318,16 +339,19 @@ describe('RTF exporter', () => {
     expect(rtf).toMatch(/\\red192\\green0\\blue0/) // caption color
     expect(rtf).toMatch(/\\f1\\fs\d+\\cf\d+\\b\\i/)
     expect(rtf).toContain('\\i ')
-    // WPS-safe caption metrics: explicit line spacing + border padding
+    // Stacked table: one outer top, one outer bottom, thin dividers under captions
+    expect(rtf).toContain('\\trowd')
+    expect((rtf.match(/\\clbrdrt\\brdrs\\brdrw40/g) || []).length).toBe(1)
+    expect((rtf.match(/\\clbrdrb\\brdrs\\brdrw40/g) || []).length).toBe(1)
+    expect((rtf.match(/\\clbrdrb\\brdrs\\brdrw20/g) || []).length).toBe(2)
     expect(rtf).toMatch(/\\sa40\\sb40\\sl\d+\\slmult0/)
-    expect(rtf).toMatch(/\\brdrb\\brdrs\\brdrw20\\brdrcf\d+\\brsp40/)
-    expect((rtf.match(/\\brdrb\\brdrs\\brdrw20\\brdrcf\d+/g) || []).length).toBeGreaterThanOrEqual(2)
-    // caption paras before code; line number "1." appears only in code (f0), after captions
+    // No mismatched paragraph-border \\brsp (that caused side-rail 错位)
+    expect(rtf).not.toMatch(/\\brsp60/)
     const firstCap = rtf.indexOf('\\f1\\fs')
     const firstCodeLn = rtf.indexOf('1.  ')
     expect(firstCap).toBeGreaterThan(-1)
     expect(firstCodeLn).toBeGreaterThan(firstCap)
-    expect(rtf).not.toContain('\\trowd')
+    expect((rtf.match(/\\cell\\row/g) || []).length).toBe(3)
   })
 
   it('applies code inset via absolute \\tx (includes \\li); gutter stays flush', () => {
